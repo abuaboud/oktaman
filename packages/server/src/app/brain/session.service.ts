@@ -6,16 +6,16 @@ import { generateText } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { websocketService } from '../core/websockets';
 import { logger } from '../common/logger';
-import { OPENROUTER_API_KEY } from '../common/system';
+import { settingsService } from '../settings/settings.service';
 import { geolocationService } from '../common/geolocation.service';
+import { log } from 'node:console';
 
 const sessionRepository = databaseConnection.getRepository<Session>(SessionEntitySchema);
 
-const DEFAULT_MODEL_ID = 'anthropic/claude-opus-4-5';
 
 export const sessionService = {
     async create(params: CreateSessionRequest ): Promise<Session> {
-        const { userMessage, agentId, modelId, source, userId, ip, isTest } = params;
+        const { userMessage, agentId, modelId, source, ip, isTest } = params;
 
         // Get location from IP (geolocation service handles errors and returns null on failure)
         const location = ip ? await geolocationService.getLocationFromIp(ip) : null;
@@ -36,7 +36,7 @@ export const sessionService = {
             todos: [],
             title: 'New Chat',
             agentId: agentId || null,
-            modelId: modelId || DEFAULT_MODEL_ID,
+            modelId: modelId!,
             cost: 0,
             source,
             location,
@@ -140,18 +140,19 @@ export const sessionService = {
 };
 
 async function generateAndEmitSessionTitle(sessionId: string, userMessage: string): Promise<void> {
-    // Generate the title
-    if (!OPENROUTER_API_KEY) {
+    const openRouterApiKey = await settingsService.getEffectiveApiKey('openrouter');
+    if (!openRouterApiKey) {
         logger.warn({ sessionId }, '[SessionService] No OpenRouter API key configured, skipping title generation');
         return;
     }
+    logger.info({ sessionId }, '[SessionService] Generating session title using OpenRouter');
 
     const openrouter = createOpenRouter({
-        apiKey: OPENROUTER_API_KEY,
+        apiKey: openRouterApiKey,
     });
 
     const { text } = await generateText({
-        model: openrouter('anthropic/claude-3.5-haiku'),
+        model: openrouter((await settingsService.getOrCreate()).defaultModelId),
         prompt: `Generate a very short (3-5 words maximum) title for a chat conversation that starts with this user message. The title should capture the main topic or intent. Only return the title, nothing else.
 
 User message: ${userMessage}`,

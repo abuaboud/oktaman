@@ -27,7 +27,7 @@ export const useChat = (options: UseChatOptions) => {
       if (!stop.sessionId) {
         throw new Error('No session to stop');
       }
-      await api.post(`/v1/sessions/${stop.sessionId}/stop`, {});
+      await api.post(`/api/v1/sessions/${stop.sessionId}/stop`, {});
     },
   });
 
@@ -39,7 +39,7 @@ export const useChat = (options: UseChatOptions) => {
 
 
       if (!currentSessionId) {
-        const newSession = await api.post<SessionMetadata>('/v1/sessions/', {
+        const newSession = await api.post<SessionMetadata>('/api/v1/sessions/', {
           userMessage: message,
           modelId: params.modelId,
         });
@@ -81,7 +81,7 @@ export const useChat = (options: UseChatOptions) => {
       }
       // Send the chat message (streaming updates will come via websocket)
       await api.post(
-        `/v1/sessions/${currentSessionId}/chat`,
+        `/api/v1/sessions/${currentSessionId}/chat`,
         params
       );
     },

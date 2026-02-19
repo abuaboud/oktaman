@@ -10,7 +10,7 @@ function useSettings() {
     return useQuery({
         queryKey: SETTINGS_QUERY_KEY,
         queryFn: async () => {
-            return api.get<Settings>('/v1/settings');
+            return api.get<Settings>('/api/v1/settings');
         },
     });
 }
@@ -19,7 +19,7 @@ function useValidation() {
     return useQuery({
         queryKey: VALIDATION_QUERY_KEY,
         queryFn: async () => {
-            return api.get<ValidationResult>('/v1/settings/validation');
+            return api.get<ValidationResult>('/api/v1/settings/validation');
         },
     });
 }
@@ -29,7 +29,7 @@ function useUpdateLlmSettings() {
 
     return useMutation({
         mutationFn: async (data: UpdateLlmSettingsRequest) => {
-            return api.put<Settings>('/v1/settings/llm', data);
+            return api.put<Settings>('/api/v1/settings/llm', data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: SETTINGS_QUERY_KEY });
@@ -47,7 +47,7 @@ function useUpdateToolsSettings() {
 
     return useMutation({
         mutationFn: async (data: UpdateToolsSettingsRequest) => {
-            return api.put<Settings>('/v1/settings/tools', data);
+            return api.put<Settings>('/api/v1/settings/tools', data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: SETTINGS_QUERY_KEY });
@@ -64,7 +64,7 @@ function useAddChannel() {
 
     return useMutation({
         mutationFn: async (data: AddSettingsChannelRequest) => {
-            return api.post<Settings>('/v1/settings/channels', data);
+            return api.post<Settings>('/api/v1/settings/channels', data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: SETTINGS_QUERY_KEY });
@@ -81,7 +81,7 @@ function useUpdateChannel() {
 
     return useMutation({
         mutationFn: async ({ channelId, data }: { channelId: string; data: UpdateSettingsChannelRequest }) => {
-            return api.put<Settings>(`/v1/settings/channels/${channelId}`, data);
+            return api.put<Settings>(`/api/v1/settings/channels/${channelId}`, data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: SETTINGS_QUERY_KEY });
@@ -98,7 +98,7 @@ function useRemoveChannel() {
 
     return useMutation({
         mutationFn: async (channelId: string) => {
-            return api.delete<Settings>(`/v1/settings/channels/${channelId}`);
+            return api.delete<Settings>(`/api/v1/settings/channels/${channelId}`);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: SETTINGS_QUERY_KEY });

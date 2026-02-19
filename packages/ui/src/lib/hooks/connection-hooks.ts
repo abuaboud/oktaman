@@ -16,14 +16,14 @@ export const connectionCollection = createCollection<Connection, string>(
     getKey: (connection) => connection.slug,
     refetchInterval: 5000,
     queryFn: async () => {
-      const response = await api.get<Connection[]>('/v1/connections');
+      const response = await api.get<Connection[]>('/api/v1/connections');
       return response;
     },
     onDelete: async ({ transaction }) => {
       const mutation = transaction.mutations[0];
       if (!mutation || mutation.type !== 'delete') return;
 
-      await api.delete<void>(`/v1/connections/${mutation.key}`);
+      await api.delete<void>(`/api/v1/connections/${mutation.key}`);
     },
   }),
 );

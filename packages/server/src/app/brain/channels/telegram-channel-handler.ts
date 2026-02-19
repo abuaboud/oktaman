@@ -240,6 +240,9 @@ async function handleMessage(ctx: Context, channel: Channel): Promise<void> {
                     }
 
                     const telegramMessage = telegramifyMarkdown(message, 'remove');
+                    if (telegramMessage.trim().length === 0) {
+                        return;
+                    }
 
                     await bot.api.sendMessage(chatId, telegramMessage, {
                         parse_mode: 'MarkdownV2',

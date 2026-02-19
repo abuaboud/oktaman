@@ -18,14 +18,14 @@ export const sessionCollection = createCollection<SessionMetadata, string>(
     queryClient: collectionQueryClient,
     getKey: (session) => session.id,
     queryFn: async () => {
-      const response = await api.get<SessionMetadata[]>('/v1/sessions');
+      const response = await api.get<SessionMetadata[]>('/api/v1/sessions');
       return response;
     },
     onDelete: async ({ transaction }) => {
       const results = await Promise.allSettled(
         transaction.mutations.map(async (mutation) => {
           if (mutation.type !== 'delete') return;
-          await api.delete<void>(`/v1/sessions/${mutation.key}`);
+          await api.delete<void>(`/api/v1/sessions/${mutation.key}`);
         })
       );
 
@@ -39,7 +39,7 @@ export const sessionCollection = createCollection<SessionMetadata, string>(
       await Promise.all(
         transaction.mutations.map(async (mutation) => {
           if (mutation.type !== 'update') return;
-          await api.patch<SessionMetadata>(`/v1/sessions/${mutation.key}`, {
+          await api.patch<SessionMetadata>(`/api/v1/sessions/${mutation.key}`, {
             status: mutation.changes.status,
           });
         })
@@ -75,7 +75,7 @@ export const sessionHooks = {
         if (isNil(id) || id === '') {
           return [];
         }
-        const session = await api.get<Session>(`/v1/sessions/${id}`);
+        const session = await api.get<Session>(`/api/v1/sessions/${id}`);
         return session.conversation;
       },
       staleTime: 5 * 60 * 1000,

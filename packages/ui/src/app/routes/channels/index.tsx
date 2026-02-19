@@ -43,7 +43,7 @@ export function ChannelsDialog({ open, onOpenChange }: ChannelsDialogProps) {
     };
 
     // Call API directly instead of optimistic update
-    await api.post<Channel>('/v1/channels', request);
+    await api.post<Channel>('/api/v1/channels', request);
 
     // Invalidate and refetch channels to update the UI
     await channelCollection.utils.refetch();

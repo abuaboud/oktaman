@@ -8,8 +8,6 @@ import { errorHandler } from './common/error-handler';
 import { healthModule } from './core/health/health.module';
 import fastifySocketIO from './plugins/fastify-socket';
 import { Socket } from 'socket.io';
-import { websocketService } from './core/websockets';
-import { rejectedPromiseHandler } from '@oktaman/shared';
 import { oktamanModule } from './brain/oktaman.module';
 import { agentModule } from './agent/agent.module';
 import { filesModule } from './files/files.module';
@@ -81,10 +79,9 @@ export async function app(fastify: FastifyInstance, opts: AppOptions): Promise<v
     // Handle SPA routing - serve index.html for non-API routes
     fastify.setNotFoundHandler(async (request, reply) => {
         if (request.url.startsWith('/v1/') || request.url.startsWith('/socket.io')) {
-            reply.code(404).send({ error: 'Not found' });
-            return;
+            return reply.code(404).send({ error: 'Not found' });
         }
-        reply.sendFile('index.html');
+        return reply.sendFile('index.html');
     });
 
 }

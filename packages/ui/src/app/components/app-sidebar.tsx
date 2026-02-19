@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { SidebarProfile } from "./sidebar-profile"
 import { NavAgents } from "./nav-agents"
-import { NavBackgroundAgents } from "./nav-background-agents"
 import { useTheme } from "./theme-provider"
 
 
@@ -151,7 +150,6 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
         <NavAgents />
-        <NavBackgroundAgents />
       </SidebarContent>
 
       <SidebarFooter>

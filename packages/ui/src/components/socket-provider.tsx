@@ -150,6 +150,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                 status: update.data.status,
                 ...(update.data.isStreaming !== undefined && { isStreaming: update.data.isStreaming }),
                 ...(update.data.usage !== undefined && { usage: update.data.usage }),
+                ...(update.data.title !== undefined && { title: update.data.title }),
+                ...(update.data.cost !== undefined && { cost: update.data.cost }),
               });
 
               if (update.data.status === 'closed' && update.data.isStreaming === false) {

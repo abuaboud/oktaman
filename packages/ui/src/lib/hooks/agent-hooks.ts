@@ -17,9 +17,9 @@ export const agentCollection = createCollection<Agent, string>(
     getKey: (agent) => agent.id,
     queryFn: async () => {
       try {
-        const response = await api.get<Agent[]>('/v1/agents');
+        const response = await api.get<Agent[]>('/api/v1/agents');
         if (!Array.isArray(response)) {
-          console.error('Expected array from /v1/agents, got:', typeof response, response);
+          console.error('Expected array from /api/v1/agents, got:', typeof response, response);
           return [];
         }
         return response;
@@ -42,7 +42,7 @@ export const agentCollection = createCollection<Agent, string>(
             trigger: modified.trigger,
           };
 
-          const response = await api.post<any>('/v1/agents', data);
+          const response = await api.post<any>('/api/v1/agents', data);
 
           collection.update(mutation.key, (draft: any) => {
             draft.id = response.id;
@@ -65,7 +65,7 @@ export const agentCollection = createCollection<Agent, string>(
             modelId: modified.modelId,
           };
 
-          await api.patch<Agent>(`/v1/agents/${key}`, updateData);
+          await api.patch<Agent>(`/api/v1/agents/${key}`, updateData);
         })
       );
     },
@@ -74,7 +74,7 @@ export const agentCollection = createCollection<Agent, string>(
       const results = await Promise.allSettled(
         transaction.mutations.map(async (mutation) => {
           if (mutation.type !== 'delete') return;
-          await api.delete<void>(`/v1/agents/${mutation.key}`);
+          await api.delete<void>(`/api/v1/agents/${mutation.key}`);
         })
       );
 
@@ -117,7 +117,7 @@ export const useTestAgent = () => {
   return useMutation({
     mutationFn: async (params: { agentId: string; sessionId?: string }): Promise<{ sessionId: string }> => {
       const response = await api.post<{ sessionId: string }>(
-        `/v1/agents/${params.agentId}/test`,
+        `/api/v1/agents/${params.agentId}/test`,
         { sessionId: params.sessionId }
       );
       return response;

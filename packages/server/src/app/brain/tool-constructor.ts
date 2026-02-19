@@ -1,9 +1,10 @@
 import { Tool } from 'ai';
 import { LocalSandbox } from './local-sandbox';
-import { SessionSource } from '@oktaman/shared';
+import { SessionSource, tryCatch } from '@oktaman/shared';
 import { Composio } from '@composio/core';
 import { VercelProvider } from '@composio/vercel';
-import { COMPOSIO_API_KEY } from '../common/system';
+import { logger } from '../common/logger';
+import { settingsService } from '../settings/settings.service';
 import { createExecuteBashTool } from './tools/execute-bash';
 import { createDisplayAttachmentsTool } from './tools/display-attachments';
 import { createPlanningTools } from './tools/planning';
@@ -61,7 +62,7 @@ export type ToolConstructorConfig = {
     sessionSource: SessionSource;
 }
 
-export async function constructTools(config: ToolConstructorConfig): Promise<Record<string, Tool>> {
+export async function constructTools(config: ToolConstructorConfig): Promise<ConstructToolsResult> {
     const {
         sandbox,
         sessionId,
@@ -69,21 +70,17 @@ export async function constructTools(config: ToolConstructorConfig): Promise<Rec
     } = config;
 
     const allTools: Record<string, Tool> = {};
-    const excludedTools = excludedToolsBySource[sessionSource] || [];
+    const excludedTools = [...(excludedToolsBySource[sessionSource] || [])];
 
     // TODO: We have to use our own auth configs for composio
     // composioAuthConfig: packages/server/src/app/brain/composio-auth-config.ts
     // Use a default entity ID for single-tenant mode
-    const composio = new Composio({ provider: new VercelProvider(), apiKey: COMPOSIO_API_KEY });
-    const composioSession = await composio.create('default-user', {
-        authConfigs: undefined,
-        toolkits: {
-            disable: ['OPENAI', 'ANTHROPIC_ADMINISTRATOR', 'COMPOSIO_SEARCH', 'CODEINTERPRETER',
-                'AMBIENT_WEATHER', 'OPENWEATHER_API', 'STORMGLASS_IO', 'AMBEE', 'WEATHERMAP', 'HERE', 'CORRENTLY', 'APIVERVE'
-            ]
-        },
-    });
-    const composioTools = await composioSession.tools();
+    const composioTools = await buildComposioTools();
+
+    // If no Composio tools available, exclude Composio-related tools from prompt
+    if (Object.keys(composioTools).length === 0) {
+        excludedTools.push(ToolName.LIST_COMPOSIO_TRIGGERS);
+    }
 
     // Helper function to check if a tool should be included
     function shouldIncludeTool(toolName: ToolName): boolean {
@@ -168,5 +165,38 @@ export async function constructTools(config: ToolConstructorConfig): Promise<Rec
     // Add Composio tools
     Object.assign(allTools, composioTools);
 
-    return allTools;
+    return { tools: allTools, excludedTools };
+}
+
+async function buildComposioTools(): Promise<Record<string, Tool>> {
+    const composioApiKey = await settingsService.getEffectiveApiKey('composio');
+    if (!composioApiKey) {
+        logger.info('[ToolConstructor] No Composio API key configured, skipping Composio tools');
+        return {};
+    }
+
+    const [error, tools] = await tryCatch(initComposioTools(composioApiKey));
+    if (error) {
+        logger.warn({ error }, '[ToolConstructor] Failed to initialize Composio tools, continuing without them');
+        return {};
+    }
+    return tools;
+}
+
+async function initComposioTools(apiKey: string): Promise<Record<string, Tool>> {
+    const composio = new Composio({ provider: new VercelProvider(), apiKey });
+    const composioSession = await composio.create('default-user', {
+        authConfigs: undefined,
+        toolkits: {
+            disable: ['OPENAI', 'ANTHROPIC_ADMINISTRATOR', 'COMPOSIO_SEARCH', 'CODEINTERPRETER', 'IQAIR_AIRVISUAL',
+                'AMBIENT_WEATHER', 'OPENWEATHER_API', 'STORMGLASS_IO', 'AMBEE', 'WEATHERMAP', 'HERE', 'CORRENTLY', 'APIVERVE'
+            ]
+        },
+    });
+    return composioSession.tools();
+}
+
+type ConstructToolsResult = {
+    tools: Record<string, Tool>;
+    excludedTools: ToolName[];
 }

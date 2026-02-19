@@ -111,7 +111,7 @@ export const TextPrompt = forwardRef<{ setMessage: (msg: string) => void }, Text
           const formData = new FormData();
           formData.append('file', file);
 
-          const response = await fetch('/v1/sessions/attachments', {
+          const response = await fetch('/api/v1/sessions/attachments', {
             method: 'POST',
             body: formData,
           });

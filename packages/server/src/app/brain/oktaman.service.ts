@@ -11,7 +11,7 @@ import { sessionStatusAgent } from "./post-hooks/session-status-agent";
 import { sessionStreamHandler } from "./session-stream-handler";
 import { settingsService } from "../settings/settings.service";
 import { createStopCondition } from "./stop-condition";
-import { constructTools, excludedToolsBySource } from "./tool-constructor";
+import { constructTools } from "./tool-constructor";
 
 export const oktamanService = {
     chatWithOktaMan: async (session: Session, abortSignal?: AbortSignal, onMessage?: (message: string) => void) => {
@@ -44,12 +44,11 @@ async function executeChatWithOktaMan(session: Session, abortSignal?: AbortSigna
         const agentContext = !isNil(session.agentId) ? await agentService.getOne({ id: session.agentId }) : undefined;
 
         // Construct all tools based on session source
-        const tools = await constructTools({
+        const { tools, excludedTools } = await constructTools({
             sandbox,
             sessionId: session.id,
             sessionSource: session.source,
         });
-
 
         const sessionUpdate: AgentStreamingUpdate = {
             event: AgentStreamingEvent.AGENT_SESSION_UPDATE as const,
@@ -62,7 +61,6 @@ async function executeChatWithOktaMan(session: Session, abortSignal?: AbortSigna
 
         const stopCondition = createStopCondition({ session });
 
-        const excludedTools = excludedToolsBySource[session.source] || [];
         const systemPrompt = await buildMainSystemPrompt({ agentContext: agentContext ?? undefined, session, excludedTools });
 
         const assistant = new ToolLoopAgent({

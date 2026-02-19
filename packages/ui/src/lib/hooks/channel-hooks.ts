@@ -16,9 +16,9 @@ export const channelCollection = createCollection<Channel, string>(
     getKey: (channel) => channel.id,
     queryFn: async () => {
       try {
-        const response = await api.get<Channel[]>('/v1/channels');
+        const response = await api.get<Channel[]>('/api/v1/channels');
         if (!Array.isArray(response)) {
-          console.error('Expected array from /v1/channels, got:', typeof response, response);
+          console.error('Expected array from /api/v1/channels, got:', typeof response, response);
           return [];
         }
         return response;
@@ -38,7 +38,7 @@ export const channelCollection = createCollection<Channel, string>(
             type: modified.type,
             config: modified.config,
           };
-          await api.post<Channel>('/v1/channels', request);
+          await api.post<Channel>('/api/v1/channels', request);
 
         })
       );
@@ -50,7 +50,7 @@ export const channelCollection = createCollection<Channel, string>(
       const results = await Promise.allSettled(
         transaction.mutations.map(async (mutation) => {
           if (mutation.type !== 'delete') return;
-          await api.delete<void>(`/v1/channels/${mutation.key}`);
+          await api.delete<void>(`/api/v1/channels/${mutation.key}`);
         })
       );
 

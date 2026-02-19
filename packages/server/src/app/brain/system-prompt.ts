@@ -11,6 +11,7 @@ const TOOL_PROMPTS: Record<string, string> = {
     [ToolName.DISPLAY_ATTACHMENTS]: loadPrompt('./tools/display-attachments/tool.md'),
     [ToolName.ASK_QUESTION]: loadPrompt('./tools/ask-question/tool.md'),
     [ToolName.CREATE_AGENT]: loadPrompt('./tools/agent/tool.md'),
+    [ToolName.LIST_COMPOSIO_TRIGGERS]: loadPrompt('./tools/agent/composio-tool.md'),
     [ToolName.MEMORY_STORE]: loadPrompt('./tools/memory/tool.md'),
     [ToolName.WRITE_TODOS]: loadPrompt('./tools/planning/tool.md'),
 };
@@ -21,7 +22,6 @@ const AGENT_CONTEXT_PROMPT_TEMPLATE = loadPrompt('./tools/agent/agent-prompt.md'
 const TOOL_PROMPT_ALIASES: Record<string, string> = {
     [ToolName.UPDATE_AGENT]: ToolName.CREATE_AGENT,
     [ToolName.LIST_AGENTS]: ToolName.CREATE_AGENT,
-    [ToolName.LIST_COMPOSIO_TRIGGERS]: ToolName.CREATE_AGENT,
     [ToolName.MEMORY_SEARCH]: ToolName.MEMORY_STORE,
     [ToolName.MEMORY_FORGET]: ToolName.MEMORY_STORE,
     [ToolName.READ_TODOS]: ToolName.WRITE_TODOS,

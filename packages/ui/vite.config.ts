@@ -28,15 +28,13 @@ export default defineConfig(({ command }) => ({
       allow: ['..'],
     },
     proxy: {
-      '/v1': {
+      '/api': {
         target: 'http://127.0.0.1:3333',
         secure: false,
         changeOrigin: true,
-        headers: {
-          Host: '127.0.0.1:4200',
-        },
+        rewrite: (path) => path.replace(/^\/api/, ''),
       },
-      '/socket.io': {
+'/socket.io': {
         target: 'http://127.0.0.1:3333',
         secure: false,
         changeOrigin: true,

@@ -1,7 +1,6 @@
 import { Settings, UpdateLlmSettingsRequest, UpdateToolsSettingsRequest, AddSettingsChannelRequest, UpdateSettingsChannelRequest, ValidationResult, SettingsChannelConfig, apId, OktaManError, OktaManErrorCode } from '@oktaman/shared';
 import { databaseConnection } from '../database/database-connection';
 import { SettingsEntitySchema } from './settings.entity';
-import * as system from '../common/system';
 
 const settingsRepository = () => databaseConnection.getRepository(SettingsEntitySchema);
 
@@ -19,13 +18,13 @@ async function getOrCreate(): Promise<Settings> {
     if (!settings) {
         settings = settingsRepository().create({
             id: SINGLETON_ID,
-            openRouterApiKey: system.OPENROUTER_API_KEY || null,
+            openRouterApiKey: null,
             defaultModelId: 'anthropic/claude-3.5-sonnet',
             embeddingModelId: 'openai/text-embedding-3-small',
             agentModelId: 'moonshotai/kimi-k2.5',
-            composioApiKey: system.COMPOSIO_API_KEY || null,
-            composioWebhookSecret: system.COMPOSIO_WEBHOOK_SECRET || null,
-            firecrawlApiKey: system.FIRECRAWL_API_KEY || null,
+            composioApiKey: null,
+            composioWebhookSecret: null,
+            firecrawlApiKey: null,
             channels: [],
             setupCompleted: false,
         });
@@ -143,9 +142,7 @@ async function validateRequired(): Promise<ValidationResult> {
     const missing: string[] = [];
     const warnings: string[] = [];
 
-    const effectiveOpenRouterKey = settings.openRouterApiKey || system.OPENROUTER_API_KEY;
-
-    if (!effectiveOpenRouterKey) {
+    if (!settings.openRouterApiKey) {
         missing.push('OpenRouter API key');
     }
 
@@ -161,13 +158,13 @@ async function getEffectiveApiKey(provider: 'openrouter' | 'composio' | 'composi
 
     switch (provider) {
         case 'openrouter':
-            return settings.openRouterApiKey || system.OPENROUTER_API_KEY || undefined;
+            return settings.openRouterApiKey || undefined;
         case 'composio':
-            return settings.composioApiKey || system.COMPOSIO_API_KEY || undefined;
+            return settings.composioApiKey || undefined;
         case 'composio-webhook-secret':
-            return settings.composioWebhookSecret || system.COMPOSIO_WEBHOOK_SECRET || undefined;
+            return settings.composioWebhookSecret || undefined;
         case 'firecrawl':
-            return settings.firecrawlApiKey || system.FIRECRAWL_API_KEY || undefined;
+            return settings.firecrawlApiKey || undefined;
         default:
             return undefined;
     }

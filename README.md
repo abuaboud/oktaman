@@ -1,148 +1,114 @@
-# OktaMan - Local AI Assistant
+<p align="center">
+  <img src="packages/ui/public/chad-oktaman.png" alt="OktaMan" width="200" />
+</p>
 
-OktaMan is a local AI assistant that runs entirely on your machine with no authentication required.
+<h1 align="center">OktaMan</h1>
 
-## Quick Start
+<p align="center">
+  <strong>Your AI-powered command center that runs locally.</strong><br>
+  One place to manage your life, automate tasks, and get things done — all from your machine.
+</p>
 
-### Installation & Running
+<p align="center">
+  <a href="#quick-start">Quick Start</a> &middot;
+  <a href="#features">Features</a> &middot;
+  <a href="#development">Development</a> &middot;
+  <a href="#contributing">Contributing</a>
+</p>
 
-1. **Build the project:**
-   ```bash
-   npm install
-   npm run build
-   ```
+---
 
-2. **Start OktaMan:**
-   ```bash
-   npx oktaman
-   # or
-   npm start
-   ```
+<p align="center">
+  <img src="assets/main-page.png" alt="OktaMan Main Page" width="800" />
+</p>
 
-   This will:
-   - Start the server at http://localhost:4321
-   - Create a local database at `~/.oktaman/data.db`
-   - Automatically open your browser
+<p align="center">
+  <img src="assets/kanban-board.png" alt="OktaMan Kanban Board" width="800" />
+</p>
 
-### First Time Setup
+---
 
-1. Once OktaMan opens in your browser, click on **Settings** in the sidebar
-2. Add your **OpenRouter API Key** (required for AI chat functionality)
-   - Get your key from: https://openrouter.ai/keys
-3. Optionally configure:
-   - **Composio API Key** - For external tool integrations
-   - **E2B API Key** - For code execution sandbox
-   - **Default Model ID** - Choose your preferred AI model (default: `anthropic/claude-3.5-sonnet`)
-   - **Sandbox ID** - Custom E2B sandbox identifier
-4. Click **Save Settings**
+## Quick start
 
-### Usage
+```bash
+npx oktaman
+```
 
-- **Chat**: Start a new conversation from the home page
-- **Agents**: Create custom AI agents with specific prompts and tools
-- **Sessions**: View and manage your chat history
-- **Connections**: Connect external services via Composio
-- **Channels**: Set up Telegram integrations
+That's it. OktaMan opens automatically at **http://localhost:4321**.
 
-### Data Storage
+On first launch, a setup wizard walks you through connecting your AI provider and configuring your preferences. You can re-run the wizard anytime from **Settings**.
 
-All data is stored locally:
-- **Database**: `~/.oktaman/data.db` (SQLite)
-- **Uploads**: `~/.oktaman/uploads/` (file attachments)
+## Features
 
-### Stopping OktaMan
+- **Command center** - A single hub to chat, delegate tasks, and orchestrate your digital life
+- **Agents** - Deploy autonomous agents with custom prompts, tools, and schedules that work in the background
+- **Tools** - Execute commands, browse the web, scrape pages, manage to-dos, and more — all from the chat
+- **Memory** - Persistent memory across sessions so context is never lost
+- **Skills** - Extensible skill system for specialized domain knowledge and workflows
+- **Telegram** - Connect a Telegram bot so your command center is always reachable
+- **Integrations** - Plug in external services (Gmail, GitHub, Slack, etc.) via Composio
+- **Multi-model** - Route to any model through OpenRouter — Claude, GPT, Gemini, Llama, and more
+- **100% local** - SQLite database at `~/.oktaman/`, nothing sent anywhere you don't control
 
-Press `Ctrl+C` in the terminal where OktaMan is running.
-
-## Development
-
-### Project Structure
+## How it works
 
 ```
 oktaman/
 ├── packages/
-│   ├── server/     # Fastify backend API
-│   ├── ui/         # React frontend
-│   └── shared/     # Shared types and utilities
-├── bin/
-│   └── oktaman.js    # CLI entry point
-└── package.json
+│   ├── server/   # Fastify API, AI orchestration, tools, database
+│   ├── ui/       # React frontend with real-time chat interface
+│   └── shared/   # Shared types and utilities
+└── bin/
+    └── oktaman.js  # CLI entry point
 ```
 
-### Development Mode
+The server handles AI model routing, tool execution, agent scheduling, and persistent storage. The UI connects over WebSockets for real-time streaming. Everything runs on your machine.
 
-Run both server and UI in development mode with hot reload:
+## Configuration
+
+All data lives in `~/.oktaman/`:
+
+| Path | Description |
+|------|-------------|
+| `~/.oktaman/data.db` | SQLite database |
+| `~/.oktaman/home/` | Working directory for agents |
+| `~/.oktaman/home/skills/` | Installed skills |
+| `~/.oktaman/storage/` | File uploads and attachments |
+
+The setup wizard configures these on first launch. To change settings later, open **Settings** from the sidebar.
+
+| Setting | Description |
+|---------|-------------|
+| **OpenRouter API Key** | Required. Get one at [openrouter.ai/keys](https://openrouter.ai/keys) |
+| **Default Model** | AI model to use (default: `anthropic/claude-sonnet-4`) |
+| **Composio API Key** | For external tool integrations |
+| **Firecrawl API Key** | For web scraping tools |
+
+## Development
 
 ```bash
-npm run dev
+npm run dev     # Start server + UI with hot reload
+npm run build   # Build all packages
+npm run lint    # Lint all packages
+npm run test    # Run tests
+npm run clean   # Remove build artifacts
 ```
 
-This starts:
-- Server at http://localhost:4321
-- UI dev server at http://localhost:4200 (proxies to server)
+Dev server runs at `http://localhost:4200` (proxies API calls to the backend at port 4321).
 
-### Building
+### Tech stack
 
-```bash
-npm run build
-```
+**Backend:** Fastify, TypeORM, SQLite, Socket.IO, Vercel AI SDK, OpenRouter
 
-### Tech Stack
-
-**Backend:**
-- Fastify (API server)
-- SQLite with better-sqlite3 (local database)
-- TypeORM (database ORM)
-- Socket.IO (real-time updates)
-- Vercel AI SDK (AI integration)
-
-**Frontend:**
-- React 18
-- Vite (build tool)
-- TanStack Query (state management)
-- Tailwind CSS (styling)
-- Radix UI (components)
-
-## Features
-
-### AI Chat
-- Multi-model support via OpenRouter
-- Streaming responses
-- Conversation history
-- File attachments
-
-### Custom Agents
-- Define custom AI agents with specific prompts
-- Configure tools and capabilities
-- Test agents in sandbox environment
-
-### Memory System
-- Semantic search with vector embeddings
-- Persistent memory across sessions
-
-### Integrations
-- Composio for external tools (Gmail, GitHub, etc.)
-- Telegram channel integration
-- E2B for code execution
-
-### Skills System
-- Extensible skill framework
-- Custom domain knowledge and workflows
+**Frontend:** React, Vite, TanStack Query, Tailwind CSS, Radix UI
 
 ## Troubleshooting
 
-**Database errors:**
-- Delete `~/.oktaman/data.db` to reset the database
-- It will be recreated on next startup
+**Database errors** - Delete `~/.oktaman/data.db` and restart. It will be recreated.
 
-**Port already in use:**
-- Kill any process using port 4321: `lsof -ti:4321 | xargs kill`
-- Or change the port in `bin/oktaman.js` (search for PORT environment variable)
+**Port in use** - Kill the process: `lsof -ti:4321 | xargs kill`
 
-**API key not working:**
-- Verify the key is correctly entered in Settings
-- Check that the key has sufficient credits
-- Try a different model ID
+**API key not working** - Verify the key in Settings and check it has credits.
 
 ## License
 
