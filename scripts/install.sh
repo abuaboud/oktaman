@@ -96,8 +96,8 @@ resolve_version() {
     | grep '"tag_name"' | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\(.*\)".*/\1/')
 
   if [ -z "$VERSION" ]; then
-    log_error "Could not determine latest version. Set OKTAMAN_VERSION to install a specific version."
-    exit 1
+    VERSION="v0.1.0"
+    log_warn "Could not fetch latest release, using default: $VERSION"
   fi
 
   # Strip leading 'v' for display but keep for download URL
