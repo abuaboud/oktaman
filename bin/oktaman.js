@@ -38,7 +38,6 @@ if (!fs.existsSync(serverPath)) {
 const server = spawn('node', [serverPath], {
   env: {
     ...process.env,
-    DB_PATH: dbPath,
     HOST: '127.0.0.1',
     PORT: '4321',
     LOG_LEVEL: 'info'

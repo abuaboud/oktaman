@@ -1,0 +1,331 @@
+#!/bin/sh
+# OktaMan CLI — manage the OktaMan background service
+set -e
+
+OKTAMAN_HOME="${OKTAMAN_HOME:-$HOME/.oktaman}"
+PORT="${OKTAMAN_PORT:-4321}"
+LABEL="com.oktaman"
+SERVICE_NAME="oktaman"
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+detect_os() {
+  case "$(uname -s)" in
+    Darwin) echo "darwin" ;;
+    Linux)  echo "linux"  ;;
+    *)      echo "unsupported"; return 1 ;;
+  esac
+}
+
+log_info()  { printf '  %s\n' "$*"; }
+log_error() { printf '  ERROR: %s\n' "$*" >&2; }
+
+require_installed() {
+  if [ ! -f "$OKTAMAN_HOME/version" ]; then
+    log_error "OktaMan is not installed. Run the installer first."
+    exit 1
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Service management — macOS (launchd)
+# ---------------------------------------------------------------------------
+
+launchd_plist="$HOME/Library/LaunchAgents/${LABEL}.plist"
+
+launchd_start() {
+  if launchctl list "$LABEL" >/dev/null 2>&1; then
+    log_info "OktaMan is already running."
+    return 0
+  fi
+  launchctl bootstrap "gui/$(id -u)" "$launchd_plist" 2>/dev/null \
+    || launchctl load "$launchd_plist" 2>/dev/null
+  log_info "OktaMan started."
+}
+
+launchd_stop() {
+  if ! launchctl list "$LABEL" >/dev/null 2>&1; then
+    log_info "OktaMan is not running."
+    return 0
+  fi
+  launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null \
+    || launchctl unload "$launchd_plist" 2>/dev/null
+  log_info "OktaMan stopped."
+}
+
+launchd_restart() {
+  launchd_stop
+  sleep 1
+  launchd_start
+}
+
+launchd_status() {
+  if launchctl list "$LABEL" >/dev/null 2>&1; then
+    pid=$(launchctl list "$LABEL" 2>/dev/null | awk 'NR==2{print $1}')
+    if [ "$pid" = "-" ] || [ -z "$pid" ]; then
+      pid="(managed by launchd)"
+    fi
+    log_info "OktaMan is running  PID: $pid"
+    log_info "URL: http://localhost:$PORT"
+  else
+    log_info "OktaMan is not running."
+  fi
+}
+
+launchd_uninstall() {
+  launchd_stop 2>/dev/null || true
+  rm -f "$launchd_plist"
+}
+
+# ---------------------------------------------------------------------------
+# Service management — Linux (systemd --user)
+# ---------------------------------------------------------------------------
+
+systemd_start() {
+  systemctl --user start "$SERVICE_NAME"
+  log_info "OktaMan started."
+}
+
+systemd_stop() {
+  systemctl --user stop "$SERVICE_NAME" 2>/dev/null || true
+  log_info "OktaMan stopped."
+}
+
+systemd_restart() {
+  systemctl --user restart "$SERVICE_NAME"
+  log_info "OktaMan restarted."
+}
+
+systemd_status() {
+  if systemctl --user is-active "$SERVICE_NAME" >/dev/null 2>&1; then
+    pid=$(systemctl --user show -p MainPID "$SERVICE_NAME" | cut -d= -f2)
+    log_info "OktaMan is running  PID: $pid"
+    log_info "URL: http://localhost:$PORT"
+  else
+    log_info "OktaMan is not running."
+  fi
+}
+
+systemd_uninstall() {
+  systemctl --user stop "$SERVICE_NAME" 2>/dev/null || true
+  systemctl --user disable "$SERVICE_NAME" 2>/dev/null || true
+  rm -f "${HOME}/.config/systemd/user/${SERVICE_NAME}.service"
+  systemctl --user daemon-reload 2>/dev/null || true
+}
+
+# ---------------------------------------------------------------------------
+# Cross-platform dispatchers
+# ---------------------------------------------------------------------------
+
+OS="$(detect_os)"
+
+svc_start() {
+  case "$OS" in
+    darwin) launchd_start ;;
+    linux)  systemd_start ;;
+  esac
+}
+
+svc_stop() {
+  case "$OS" in
+    darwin) launchd_stop ;;
+    linux)  systemd_stop ;;
+  esac
+}
+
+svc_restart() {
+  case "$OS" in
+    darwin) launchd_restart ;;
+    linux)  systemd_restart ;;
+  esac
+}
+
+svc_status() {
+  case "$OS" in
+    darwin) launchd_status ;;
+    linux)  systemd_status ;;
+  esac
+}
+
+svc_uninstall() {
+  case "$OS" in
+    darwin) launchd_uninstall ;;
+    linux)  systemd_uninstall ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+# Commands
+# ---------------------------------------------------------------------------
+
+cmd_start() {
+  require_installed
+  svc_start
+}
+
+cmd_stop() {
+  require_installed
+  svc_stop
+}
+
+cmd_restart() {
+  require_installed
+  svc_restart
+}
+
+cmd_status() {
+  require_installed
+  svc_status
+}
+
+cmd_logs() {
+  require_installed
+  lines="${1:-50}"
+  case "$OS" in
+    darwin)
+      log_info "=== stdout ==="
+      tail -n "$lines" "$OKTAMAN_HOME/logs/oktaman.stdout.log" 2>/dev/null || log_info "(no stdout log yet)"
+      echo ""
+      log_info "=== stderr ==="
+      tail -n "$lines" "$OKTAMAN_HOME/logs/oktaman.stderr.log" 2>/dev/null || log_info "(no stderr log yet)"
+      ;;
+    linux)
+      if systemctl --user is-active "$SERVICE_NAME" >/dev/null 2>&1; then
+        journalctl --user -u "$SERVICE_NAME" -n "$lines" --no-pager 2>/dev/null \
+          || {
+            log_info "=== stdout ==="
+            tail -n "$lines" "$OKTAMAN_HOME/logs/oktaman.stdout.log" 2>/dev/null || log_info "(no stdout log yet)"
+            echo ""
+            log_info "=== stderr ==="
+            tail -n "$lines" "$OKTAMAN_HOME/logs/oktaman.stderr.log" 2>/dev/null || log_info "(no stderr log yet)"
+          }
+      else
+        log_info "=== stdout ==="
+        tail -n "$lines" "$OKTAMAN_HOME/logs/oktaman.stdout.log" 2>/dev/null || log_info "(no stdout log yet)"
+        echo ""
+        log_info "=== stderr ==="
+        tail -n "$lines" "$OKTAMAN_HOME/logs/oktaman.stderr.log" 2>/dev/null || log_info "(no stderr log yet)"
+      fi
+      ;;
+  esac
+}
+
+cmd_open() {
+  require_installed
+  url="http://localhost:$PORT"
+  case "$OS" in
+    darwin) open "$url" ;;
+    linux)  xdg-open "$url" 2>/dev/null || log_info "Open $url in your browser." ;;
+  esac
+}
+
+cmd_update() {
+  log_info "Updating OktaMan..."
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "https://raw.githubusercontent.com/AbuAboud/oktaman/main/scripts/install.sh" | sh
+  elif command -v wget >/dev/null 2>&1; then
+    wget -qO- "https://raw.githubusercontent.com/AbuAboud/oktaman/main/scripts/install.sh" | sh
+  else
+    log_error "curl or wget is required for updates."
+    exit 1
+  fi
+}
+
+cmd_uninstall() {
+  require_installed
+  printf "This will remove OktaMan but preserve your data (data.db, home/, storage/).\nContinue? [y/N] "
+  read -r answer
+  case "$answer" in
+    [yY]|[yY][eE][sS]) ;;
+    *) log_info "Cancelled."; exit 0 ;;
+  esac
+
+  log_info "Stopping service..."
+  svc_uninstall
+
+  log_info "Removing application files..."
+  rm -rf "$OKTAMAN_HOME/app"
+  rm -rf "$OKTAMAN_HOME/bin"
+  rm -rf "$OKTAMAN_HOME/logs"
+  rm -f  "$OKTAMAN_HOME/version"
+
+  # Clean PATH from shell rc files
+  for rc in "$HOME/.zshrc" "$HOME/.bashrc" "$HOME/.bash_profile"; do
+    if [ -f "$rc" ]; then
+      # Remove the oktaman PATH line
+      grep -v '\.oktaman/bin' "$rc" > "${rc}.oktaman_bak" && mv "${rc}.oktaman_bak" "$rc"
+    fi
+  done
+  # Fish shell
+  rm -f "$HOME/.config/fish/conf.d/oktaman.fish" 2>/dev/null
+
+  log_info ""
+  log_info "OktaMan has been uninstalled."
+  log_info "Your data is preserved in $OKTAMAN_HOME/"
+  log_info "To remove everything: rm -rf $OKTAMAN_HOME"
+}
+
+cmd_run() {
+  require_installed
+  log_info "Starting OktaMan in foreground (Ctrl+C to stop)..."
+  HOST="127.0.0.1" \
+  PORT="$PORT" \
+  NODE_ENV="production" \
+  OKTAMAN_HOME="$OKTAMAN_HOME" \
+  exec "$OKTAMAN_HOME/bin/node" "$OKTAMAN_HOME/app/packages/server/dist/main.js"
+}
+
+cmd_version() {
+  if [ -f "$OKTAMAN_HOME/version" ]; then
+    ver=$(cat "$OKTAMAN_HOME/version")
+    log_info "OktaMan $ver"
+  else
+    log_info "OktaMan is not installed."
+  fi
+}
+
+cmd_help() {
+  cat <<'HELP'
+OktaMan — Local AI Assistant
+
+Usage: oktaman <command>
+
+Commands:
+  start       Start the OktaMan background service
+  stop        Stop the OktaMan background service
+  restart     Restart the OktaMan background service
+  status      Show whether OktaMan is running and its URL
+  logs [N]    Show the last N log lines (default: 50)
+  open        Open OktaMan in your default browser
+  update      Update OktaMan to the latest version
+  uninstall   Remove OktaMan (preserves your data)
+  run         Run OktaMan in the foreground (for debugging)
+  version     Show the installed version
+  help        Show this help message
+HELP
+}
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+case "${1:-help}" in
+  start)     cmd_start ;;
+  stop)      cmd_stop ;;
+  restart)   cmd_restart ;;
+  status)    cmd_status ;;
+  logs)      cmd_logs "$2" ;;
+  open)      cmd_open ;;
+  update)    cmd_update ;;
+  uninstall) cmd_uninstall ;;
+  run)       cmd_run ;;
+  version)   cmd_version ;;
+  help|--help|-h) cmd_help ;;
+  *)
+    log_error "Unknown command: $1"
+    cmd_help
+    exit 1
+    ;;
+esac

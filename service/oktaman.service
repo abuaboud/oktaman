@@ -1,0 +1,24 @@
+[Unit]
+Description=OktaMan - Local AI Assistant
+After=network.target
+
+[Service]
+Type=simple
+ExecStart={{OKTAMAN_HOME}}/bin/node {{OKTAMAN_HOME}}/app/packages/server/dist/main.js
+WorkingDirectory={{OKTAMAN_HOME}}/app
+Environment=PORT=4321
+Environment=HOST=127.0.0.1
+Environment=NODE_ENV=production
+Environment=OKTAMAN_HOME={{OKTAMAN_HOME}}
+Environment=HOME={{HOME}}
+
+Restart=on-failure
+RestartSec=10
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+StandardOutput=append:{{OKTAMAN_HOME}}/logs/oktaman.stdout.log
+StandardError=append:{{OKTAMAN_HOME}}/logs/oktaman.stderr.log
+
+[Install]
+WantedBy=default.target

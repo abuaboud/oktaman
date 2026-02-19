@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.oktaman</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{OKTAMAN_HOME}}/bin/node</string>
+        <string>{{OKTAMAN_HOME}}/app/packages/server/dist/main.js</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PORT</key>
+        <string>4321</string>
+        <key>HOST</key>
+        <string>127.0.0.1</string>
+        <key>NODE_ENV</key>
+        <string>production</string>
+        <key>OKTAMAN_HOME</key>
+        <string>{{OKTAMAN_HOME}}</string>
+        <key>HOME</key>
+        <string>{{HOME}}</string>
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>{{OKTAMAN_HOME}}/app</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>{{OKTAMAN_HOME}}/logs/oktaman.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{OKTAMAN_HOME}}/logs/oktaman.stderr.log</string>
+</dict>
+</plist>

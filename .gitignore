@@ -53,3 +53,7 @@ packages/server/storage/
 *.db
 *.db-shm
 *.db-wal
+
+# Release build artifacts
+release-build/
+release/
