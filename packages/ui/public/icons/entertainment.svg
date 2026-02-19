@@ -1,0 +1,23 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pixel art film/movie icon for Entertainment Finder -->
+  <!-- Film strip outer frame -->
+  <rect x="6" y="6" width="12" height="12" fill="#D946EF"/>
+
+  <!-- Film holes (left side) -->
+  <rect x="7" y="7" width="2" height="2" fill="#1F2937"/>
+  <rect x="7" y="11" width="2" height="2" fill="#1F2937"/>
+  <rect x="7" y="15" width="2" height="2" fill="#1F2937"/>
+
+  <!-- Film holes (right side) -->
+  <rect x="15" y="7" width="2" height="2" fill="#1F2937"/>
+  <rect x="15" y="11" width="2" height="2" fill="#1F2937"/>
+  <rect x="15" y="15" width="2" height="2" fill="#1F2937"/>
+
+  <!-- Film frame (screen area) -->
+  <rect x="10" y="8" width="4" height="8" fill="#F0ABFC"/>
+
+  <!-- Play symbol -->
+  <rect x="11" y="10" width="2" height="2" fill="#D946EF"/>
+  <rect x="13" y="11" width="2" height="2" fill="#D946EF"/>
+  <rect x="11" y="12" width="2" height="2" fill="#D946EF"/>
+</svg>

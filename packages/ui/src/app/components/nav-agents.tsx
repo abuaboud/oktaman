@@ -1,0 +1,67 @@
+"use client"
+
+import { useNavigate } from "react-router-dom"
+
+import {
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar"
+import { agentsHooks } from "@/lib/hooks/agent-hooks"
+import { AgentIcon } from "./agents/agent-icon"
+
+export function NavAgents() {
+  const navigate = useNavigate()
+  const { data: agents } = agentsHooks.useAll()
+
+  const handleAgentClick = (agentId: string) => {
+    navigate(`/agents/${agentId}`)
+  }
+
+  if (!agents || agents.length === 0) {
+    return null
+  }
+
+  return (
+    <>
+      {/* Expanded view */}
+      <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+        <SidebarGroupLabel>Agents</SidebarGroupLabel>
+        <SidebarMenu>
+          {agents.map((agent) => (
+            <SidebarMenuItem key={agent.id}>
+              <SidebarMenuButton
+                onClick={() => handleAgentClick(agent.id)}
+                title={agent.name}
+              >
+                <AgentIcon color={agent.color} />
+                <span className="truncate">{agent.name}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroup>
+
+      {/* Collapsed view - show only icons */}
+      <SidebarGroup className="hidden group-data-[collapsible=icon]:block">
+        <SidebarMenu>
+          {agents.map((agent) => (
+            <SidebarMenuItem key={agent.id}>
+              <SidebarMenuButton
+                onClick={() => handleAgentClick(agent.id)}
+                title={agent.name}
+                tooltip={agent.name}
+                collapsedPadding="none"
+                className="!gap-0 justify-center items-center"
+              >
+                <AgentIcon color={agent.color} isCollapsed={true} />
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroup>
+    </>
+  )
+}

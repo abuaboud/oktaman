@@ -1,0 +1,35 @@
+{
+  "name": "oktaman",
+  "version": "0.1.0",
+  "description": "Local AI assistant that runs in your browser",
+  "bin": {
+    "oktaman": "./bin/oktaman.js"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/server",
+    "packages/ui",
+    "packages/shared"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "clean": "turbo run clean",
+    "test": "turbo run test",
+    "start": "node bin/oktaman.js"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5",
+    "turbo": "^2.2.3",
+    "typescript": "^5.3.3"
+  },
+  "packageManager": "npm@10.2.4",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "open": "^11.0.0"
+  }
+}

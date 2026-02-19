@@ -1,0 +1,25 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pixel art airplane for Travel & Adventure -->
+  <!-- Airplane body -->
+  <rect x="14" y="10" width="6" height="2" fill="#F97316"/>
+  <rect x="12" y="10" width="2" height="2" fill="#FB923C"/>
+  <rect x="10" y="10" width="2" height="2" fill="#FB923C"/>
+  <rect x="8" y="10" width="2" height="2" fill="#FB923C"/>
+
+  <!-- Top wing -->
+  <rect x="10" y="6" width="2" height="4" fill="#FB923C"/>
+  <rect x="8" y="6" width="2" height="2" fill="#FB923C"/>
+  <rect x="6" y="6" width="2" height="2" fill="#FDBA74"/>
+
+  <!-- Bottom wing -->
+  <rect x="10" y="12" width="2" height="4" fill="#FB923C"/>
+  <rect x="8" y="14" width="2" height="2" fill="#FB923C"/>
+  <rect x="6" y="14" width="2" height="2" fill="#FDBA74"/>
+
+  <!-- Tail -->
+  <rect x="18" y="8" width="2" height="2" fill="#F97316"/>
+  <rect x="18" y="12" width="2" height="2" fill="#F97316"/>
+
+  <!-- Window -->
+  <rect x="12" y="10" width="2" height="2" fill="#FED7AA"/>
+</svg>

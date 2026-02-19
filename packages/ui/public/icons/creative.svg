@@ -1,0 +1,26 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pixel art paint palette for Creative Sidekick -->
+  <!-- Palette body -->
+  <rect x="6" y="8" width="12" height="8" fill="#F59E0B"/>
+
+  <!-- Palette top curves -->
+  <rect x="8" y="6" width="8" height="2" fill="#F59E0B"/>
+  <rect x="6" y="8" width="2" height="2" fill="#F59E0B"/>
+  <rect x="16" y="8" width="2" height="2" fill="#F59E0B"/>
+
+  <!-- Palette thumb hole -->
+  <rect x="16" y="12" width="2" height="2" fill="#1F2937"/>
+
+  <!-- Paint blobs (different colors) -->
+  <rect x="8" y="10" width="2" height="2" fill="#EF4444"/>
+  <rect x="11" y="10" width="2" height="2" fill="#3B82F6"/>
+  <rect x="14" y="10" width="2" height="2" fill="#10B981"/>
+
+  <!-- Paint blobs (bottom row) -->
+  <rect x="8" y="13" width="2" height="2" fill="#8B5CF6"/>
+  <rect x="11" y="13" width="2" height="2" fill="#F97316"/>
+
+  <!-- Palette highlights -->
+  <rect x="8" y="8" width="2" height="2" fill="#FCD34D"/>
+  <rect x="12" y="8" width="2" height="2" fill="#FCD34D"/>
+</svg>

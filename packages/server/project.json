@@ -1,0 +1,122 @@
+{
+  "name": "server",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/server/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/esbuild:esbuild",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "defaultConfiguration": "production",
+      "options": {
+        "platform": "node",
+        "outputPath": "dist/packages/server",
+        "format": [
+          "esm"
+        ],
+        "bundle": true,
+        "main": "packages/server/src/main.ts",
+        "tsConfig": "packages/server/tsconfig.app.json",
+        "assets": [
+          "packages/server/src/assets",
+          {
+            "input": "packages/server/src/app/brain/prompts",
+            "glob": "**/*.md",
+            "output": "packages/server/src/app/brain/prompts"
+          },
+          {
+            "input": "packages/server/src/app/brain/tools",
+            "glob": "**/tool.md",
+            "output": "packages/server/src/app/brain/tools"
+          }
+        ],
+        "generatePackageJson": true,
+        "esbuildOptions": {
+          "sourcemap": true,
+          "outExtension": {
+            ".js": ".js"
+          }
+        }
+      },
+      "configurations": {
+        "development": {},
+        "production": {
+          "generateLockfile": true,
+          "esbuildOptions": {
+            "sourcemap": false,
+            "outExtension": {
+              ".js": ".js"
+            }
+          }
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": [
+        "build"
+      ],
+      "options": {
+        "buildTarget": "server:build",
+        "runBuildTargetDependencies": false
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "server:build:development"
+        },
+        "production": {
+          "buildTarget": "server:build:production"
+        }
+      }
+    },
+    "db": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx ts-node -r tsconfig-paths/register -P packages/server/tsconfig.app.json ./node_modules/typeorm/cli.js"
+      }
+    },
+    "db-migration": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "nx db server -- migration:generate -p -d packages/server/src/app/database/database-connection.ts packages/server/src/app/database/migrations/{args.name}"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": [
+        "{options.outputFile}"
+      ],
+      "options": {
+        "lintFilePatterns": [
+          "packages/server/**/*.ts"
+        ]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "packages/server/jest.config.ts",
+        "codeCoverage": true
+      }
+    },
+    "docker-build": {
+      "dependsOn": [
+        "build"
+      ],
+      "command": "docker build -f packages/server/Dockerfile . -t server"
+    },
+    "benchmark": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        "build"
+      ],
+      "options": {
+        "command": "node dist/packages/server/main.js --benchmark"
+      }
+    }
+  }
+}

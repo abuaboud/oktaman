@@ -1,0 +1,22 @@
+import { PromptSuggestions } from "./prompt-suggestions";
+import { FullLogo } from "@/components/custom/full-logo";
+
+interface EmptyConversationProps {
+  onSelectPrompt?: (prompt: string) => void;
+}
+
+export function EmptyConversation({ onSelectPrompt }: EmptyConversationProps) {
+  return (
+    <div className="flex-1 flex flex-col justify-center px-4">
+      <div className="flex flex-col items-center text-center space-y-4 mb-8">
+        <FullLogo iconSize={48} textSize="text-3xl" />
+        <h1 className="text-3xl font-semibold">What can I help you with?</h1>
+        <p className="text-lg text-muted-foreground">
+          Your AI sidekick for work, life, and everything in between
+        </p>
+      </div>
+
+      {onSelectPrompt && <PromptSuggestions onSelectPrompt={onSelectPrompt} />}
+    </div>
+  );
+}
