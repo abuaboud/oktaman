@@ -51,6 +51,13 @@ export async function app(fastify: FastifyInstance, opts: AppOptions): Promise<v
         }
     });
 
+    // Rewrite /api prefix to match server routes (mirrors Vite proxy in development)
+    fastify.addHook('onRequest', async (request) => {
+        if (request.url.startsWith('/api/')) {
+            request.raw.url = request.url.replace(/^\/api/, '');
+        }
+    });
+
     await fastify.setErrorHandler(errorHandler)
     await fastify.register(healthModule)
     await fastify.register(oktamanModule)
@@ -78,7 +85,7 @@ export async function app(fastify: FastifyInstance, opts: AppOptions): Promise<v
 
     // Handle SPA routing - serve index.html for non-API routes
     fastify.setNotFoundHandler(async (request, reply) => {
-        if (request.url.startsWith('/v1/') || request.url.startsWith('/socket.io')) {
+        if (request.url.startsWith('/v1/') || request.url.startsWith('/api/v1/') || request.url.startsWith('/socket.io')) {
             return reply.code(404).send({ error: 'Not found' });
         }
         return reply.sendFile('index.html');
