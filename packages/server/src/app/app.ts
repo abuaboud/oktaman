@@ -51,13 +51,6 @@ export async function app(fastify: FastifyInstance, opts: AppOptions): Promise<v
         }
     });
 
-    // Rewrite /api prefix to match server routes (mirrors Vite proxy in development)
-    fastify.addHook('onRequest', async (request) => {
-        if (request.url.startsWith('/api/')) {
-            request.raw.url = request.url.replace(/^\/api/, '');
-        }
-    });
-
     await fastify.setErrorHandler(errorHandler)
     await fastify.register(healthModule)
     await fastify.register(oktamanModule)

@@ -9,6 +9,12 @@ import { telegramChannelHandler } from './app/brain/channels/telegram-channel-ha
 
 // Instantiate Fastify with some config
 const server = Fastify({
+  rewriteUrl: (req) => {
+    if (req.url?.startsWith('/api/')) {
+      return req.url.replace(/^\/api/, '');
+    }
+    return req.url ?? '/';
+  },
   logger: {
     level: LOG_LEVEL,
     transport: {
