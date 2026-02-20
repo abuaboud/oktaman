@@ -1,7 +1,9 @@
-import { CreateChannelRequest, ChannelType } from "@oktaman/shared";
+import { AddSettingsChannelRequest, ChannelType } from "@oktaman/shared";
 import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { channelService } from "./channel.service";
 import { telegramChannelHandler } from "./telegram-channel-handler";
+import { telegramPairing } from "./telegram-pairing";
+import { settingsService } from "../../settings/settings.service";
 import { z } from "zod";
 
 export const channelController: FastifyPluginAsyncZod = async (app) => {
@@ -26,17 +28,32 @@ export const channelController: FastifyPluginAsyncZod = async (app) => {
   app.post('/', CreateChannelConfig, async (request) => {
     // Verify Telegram bot token before creating the channel
     if (request.body.type === ChannelType.TELEGRAM) {
-      await telegramChannelHandler.verifyBotToken(request.body.config.botToken);
+      const config = request.body.config as Record<string, unknown>;
+      await telegramChannelHandler.verifyBotToken(config.botToken as string);
     }
 
-    const channel = await channelService.create(request.body);
+    const settings = await settingsService.addChannel(request.body);
+    const channel = settings.channels[settings.channels.length - 1];
 
     // Initialize Telegram bot if it's a Telegram channel
-    if (channel.type === ChannelType.TELEGRAM) {
+    if (request.body.type === ChannelType.TELEGRAM) {
       await telegramChannelHandler.initializeBot(channel);
     }
 
     return channel;
+  });
+
+  // Generate pairing code
+  app.post('/:channelId/pairing-code', PairingCodeConfig, async (request) => {
+    await channelService.getOrThrow({ channelId: request.params.channelId });
+    const result = telegramPairing.createCode(request.params.channelId);
+    return result;
+  });
+
+  // Remove paired chat
+  app.delete('/:channelId/paired-chat', RemovePairedChatConfig, async (request) => {
+    await channelService.removePairedChat({ channelId: request.params.channelId });
+    return { success: true };
   });
 
   // Delete channel
@@ -47,12 +64,11 @@ export const channelController: FastifyPluginAsyncZod = async (app) => {
 
     // Stop Telegram bot if it's a Telegram channel
     if (channel && channel.type === 'TELEGRAM') {
-      await telegramChannelHandler.stopBot(channel.config.botToken)
+      const config = channel.config as Record<string, unknown>;
+      await telegramChannelHandler.stopBot(config.botToken as string);
     }
 
-    await channelService.delete({
-      channelId: request.params.channelId
-    });
+    await settingsService.removeChannel(request.params.channelId);
     return { success: true };
   });
 };
@@ -73,11 +89,27 @@ const GetChannelConfig = {
 
 const CreateChannelConfig = {
   schema: {
-    body: CreateChannelRequest,
+    body: AddSettingsChannelRequest,
   },
 };
 
 const DeleteChannelConfig = {
+  schema: {
+    params: z.object({
+      channelId: z.string(),
+    }),
+  },
+};
+
+const PairingCodeConfig = {
+  schema: {
+    params: z.object({
+      channelId: z.string(),
+    }),
+  },
+};
+
+const RemovePairedChatConfig = {
   schema: {
     params: z.object({
       channelId: z.string(),

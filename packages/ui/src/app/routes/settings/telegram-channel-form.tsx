@@ -1,7 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { TelegramChannelConfig } from "@oktaman/shared";
 import { useForm } from "@tanstack/react-form";
 import { useState } from "react";
 
@@ -15,7 +14,7 @@ export function TelegramChannelForm({ onSave, onCancel }: TelegramChannelFormPro
     onSubmit: async ({ value }) => {
       setServerError(null);
       try {
-        await onSave("Telegram Bot", { botToken: value.botToken });
+        await onSave("Telegram Bot", { botToken: value.botToken, pairedChatId: null });
       } catch (err) {
         let errorMessage = 'Failed to save Telegram channel. Please try again.';
 
@@ -114,6 +113,6 @@ export function TelegramChannelForm({ onSave, onCancel }: TelegramChannelFormPro
 }
 
 type TelegramChannelFormProps = {
-  onSave: (name: string, config: TelegramChannelConfig) => Promise<void>;
+  onSave: (name: string, config: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
 }

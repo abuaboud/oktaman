@@ -39,14 +39,7 @@ export const settingsController: FastifyPluginAsyncZod = async (app) => {
             const botToken = (request.body.config as Record<string, unknown>).botToken as string;
             const channel = settings.channels.find(c => c.type === 'TELEGRAM' && (c.config as Record<string, unknown>).botToken === botToken);
             if (channel) {
-                await telegramChannelHandler.initializeBot({
-                    id: channel.id,
-                    type: 'TELEGRAM' as const,
-                    name: channel.name,
-                    config: channel.config as { botToken: string },
-                    created: new Date(channel.created),
-                    updated: new Date(channel.updated),
-                } as never);
+                await telegramChannelHandler.initializeBot(channel);
             }
         }
 

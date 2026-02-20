@@ -1,29 +1,19 @@
-import { Channel, CreateChannelRequest, UpdateChannelRequest, OktaManError, OktaManErrorCode, apId } from '@oktaman/shared';
-import { databaseConnection } from '../../database/database-connection';
-import { ChannelEntitySchema } from './channel.entity';
-
-const channelRepository = () => databaseConnection.getRepository(ChannelEntitySchema);
+import { SettingsChannelConfig, OktaManError, OktaManErrorCode } from '@oktaman/shared';
+import { settingsService } from '../../settings/settings.service';
 
 export const channelService = {
-  async list(): Promise<Channel[]> {
-    const channels = await channelRepository().find({
-      order: { created: 'DESC' }
-    });
-    return channels;
+  async list(): Promise<SettingsChannelConfig[]> {
+    const settings = await settingsService.getOrCreate();
+    return [...settings.channels].sort((a, b) => b.created.localeCompare(a.created));
   },
 
-  async get(channelId: string): Promise<Channel | null> {
-    return channelRepository().findOne({
-      where: { id: channelId }
-    });
+  async get(channelId: string): Promise<SettingsChannelConfig | null> {
+    const settings = await settingsService.getOrCreate();
+    return settings.channels.find(c => c.id === channelId) ?? null;
   },
 
-  async getOrThrow({ channelId }: GetParams): Promise<Channel> {
-    const channel = await channelRepository().findOne({
-      where: {
-        id: channelId,
-      }
-    });
+  async getOrThrow({ channelId }: GetParams): Promise<SettingsChannelConfig> {
+    const channel = await this.get(channelId);
     if (!channel) {
       throw new OktaManError({
         code: OktaManErrorCode.ENTITY_NOT_FOUND,
@@ -33,49 +23,34 @@ export const channelService = {
     return channel;
   },
 
-  async create(request: CreateChannelRequest): Promise<Channel> {
-    const channel = channelRepository().create({
-      id: apId(),
-      name: request.name,
-      type: request.type,
-      config: request.config,
+  async setPairedChat({ channelId, chatId }: SetPairedChatParams): Promise<void> {
+    const channel = await this.getOrThrow({ channelId });
+    const config = channel.config as Record<string, unknown>;
+    await settingsService.updateChannel({
+      channelId,
+      request: { config: { ...config, pairedChatId: chatId } },
     });
-
-    await channelRepository().save(channel);
-    return channel;
   },
 
-  async update({ channelId, request }: UpdateParams): Promise<Channel> {
+  async removePairedChat({ channelId }: RemovePairedChatParams): Promise<void> {
     const channel = await this.getOrThrow({ channelId });
-
-    if (request.name !== undefined) {
-      channel.name = request.name;
-    }
-    if (request.config !== undefined) {
-      channel.config = request.config;
-    }
-
-    await channelRepository().save(channel);
-    return channel;
+    const config = channel.config as Record<string, unknown>;
+    await settingsService.updateChannel({
+      channelId,
+      request: { config: { ...config, pairedChatId: null } },
+    });
   },
-
-  async delete({ channelId }: DeleteParams): Promise<void> {
-    const channel = await this.getOrThrow({ channelId });
-    await channelRepository().delete(channel.id);
-  },
-
 };
-
 
 type GetParams = {
   channelId: string;
 }
 
-type UpdateParams = {
+type SetPairedChatParams = {
   channelId: string;
-  request: UpdateChannelRequest;
+  chatId: string;
 }
 
-type DeleteParams = {
+type RemovePairedChatParams = {
   channelId: string;
 }

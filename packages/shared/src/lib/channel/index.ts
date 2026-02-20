@@ -8,6 +8,7 @@ export enum ChannelType {
 // Telegram configuration
 export const TelegramChannelConfig = z.object({
     botToken: z.string(),
+    pairedChatId: z.string().nullable().default(null),
 })
 
 export type TelegramChannelConfig = z.infer<typeof TelegramChannelConfig>

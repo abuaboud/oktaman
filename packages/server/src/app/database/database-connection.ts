@@ -6,7 +6,6 @@ import { SessionSubscriber } from '../brain/session.subscriber';
 import { AgentEntity } from '../agent/agent.entity';
 import { AgentSubscriber } from '../agent/agent.subscriber';
 import { MemoryBlockEntitySchema } from '../memory-block/memory-block.entity';
-import { ChannelEntitySchema } from '../brain/channels/channel.entity';
 import { SettingsEntitySchema } from '../settings/settings.entity';
 
 export const databaseConnection = new DataSource({
@@ -18,7 +17,6 @@ export const databaseConnection = new DataSource({
         SessionEntitySchema,
         AgentEntity,
         MemoryBlockEntitySchema,
-        ChannelEntitySchema,
         SettingsEntitySchema
     ],
     migrations: [path.join(__dirname, '../database/migrations/**/*{.ts,.js}')],

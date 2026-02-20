@@ -1,5 +1,5 @@
 import { Bot, Context, InputFile } from 'grammy';
-import { Channel, ConversationFile, conversationUtils, SessionSource, OktaManError, OktaManErrorCode } from '@oktaman/shared';
+import { ConversationFile, conversationUtils, SessionSource, SettingsChannelConfig, OktaManError, OktaManErrorCode } from '@oktaman/shared';
 import { channelService } from './channel.service';
 import { logger } from '../../common/logger';
 import { sessionService } from '../session.service';
@@ -11,6 +11,7 @@ import * as fs from 'fs';
 import { Update } from 'grammy/types';
 import telegramifyMarkdown from 'telegramify-markdown';
 import { inspect } from 'util';
+import { telegramPairing } from './telegram-pairing';
 
 const activeBots = new Map<string, Bot>();
 const chatSessions = new Map<string, string>();
@@ -63,9 +64,9 @@ export const telegramChannelHandler = {
             failed: failures.length
         }, '[TelegramHandler] Initialized Telegram bots from database');
     },
-    async initializeBot(channel: Channel): Promise<void> {
+    async initializeBot(channel: SettingsChannelConfig): Promise<void> {
         logger.info({ channelId: channel.id }, '[TelegramHandler] Initializing bot');
-        const botToken = channel.config.botToken;
+        const botToken = getChannelBotToken(channel);
 
         try {
 
@@ -187,7 +188,7 @@ async function setProfilePicture(bot: Bot, channelId: string): Promise<void> {
 }
 
 
-async function handleMessage(ctx: Context, channel: Channel): Promise<void> {
+async function handleMessage(ctx: Context, channel: SettingsChannelConfig): Promise<void> {
     const chatId = ctx.chat?.id.toString();
     const messageText = ctx.message?.text || ctx.message?.caption || '';
     const photos = ctx.message?.photo;
@@ -197,7 +198,14 @@ async function handleMessage(ctx: Context, channel: Channel): Promise<void> {
         return;
     }
 
-    const bot = activeBots.get(channel.config.botToken);
+    const botToken = getChannelBotToken(channel);
+    const bot = activeBots.get(botToken);
+
+    const pairingResult = await enforcePairing({ channelId: channel.id, chatId, messageText, bot });
+    if (!pairingResult.authorized) {
+        return;
+    }
+
     const typingActionInterval = setInterval(() => {
         if (bot) {
             try {
@@ -214,7 +222,7 @@ async function handleMessage(ctx: Context, channel: Channel): Promise<void> {
             modelId: settings.agentModelId,
         });
 
-        const files: ConversationFile[] | undefined = await processPhotos(photos, bot, channel, chatId);
+        const files: ConversationFile[] | undefined = await processPhotos(photos, bot, botToken, chatId);
 
         logger.info({ chatId, messageText, hasPhotos: !!photos, channelId: channel.id, files: files?.length }, '[TelegramHandler] Received message');
 
@@ -282,7 +290,7 @@ async function handleMessage(ctx: Context, channel: Channel): Promise<void> {
 async function processPhotos(
     photos: TelegramPhotoSize[] | undefined,
     bot: Bot | undefined,
-    channel: Channel,
+    botToken: string,
     chatId: string
 ): Promise<ConversationFile[] | undefined> {
     if (!photos || photos.length === 0) {
@@ -290,7 +298,7 @@ async function processPhotos(
     }
 
     if (!bot) {
-        logger.warn({ chatId, channelId: channel.id }, '[TelegramHandler] Bot not available for photo processing');
+        logger.warn({ chatId }, '[TelegramHandler] Bot not available for photo processing');
         return undefined;
     }
 
@@ -305,7 +313,7 @@ async function processPhotos(
         return undefined;
     }
 
-    const fileUrl = `https://api.telegram.org/file/bot${channel.config.botToken}/${file.file_path}`;
+    const fileUrl = `https://api.telegram.org/file/bot${botToken}/${file.file_path}`;
 
     // Download the file and convert to base64
     const response = await fetch(fileUrl);
@@ -349,10 +357,64 @@ function resolvePhotoSource(url: string): string | InputFile {
     return url
 }
 
+function getChannelBotToken(channel: SettingsChannelConfig): string {
+    const config = channel.config as Record<string, unknown>;
+    return config.botToken as string;
+}
+
+async function enforcePairing({ channelId, chatId, messageText, bot }: EnforcePairingParams): Promise<EnforcePairingResult> {
+    const settings = await settingsService.getOrCreate();
+    const freshChannel = settings.channels.find(c => c.id === channelId);
+    if (!freshChannel) {
+        return { authorized: false };
+    }
+
+    const config = freshChannel.config as Record<string, unknown>;
+    const pairedChatId = (config.pairedChatId as string | null) ?? null;
+
+    if (pairedChatId === chatId) {
+        return { authorized: true };
+    }
+
+    if (attemptPairingByCode({ code: messageText, channel: freshChannel })) {
+        await channelService.setPairedChat({ channelId: freshChannel.id, chatId });
+        if (bot) {
+            await bot.api.sendMessage(chatId, 'Successfully paired! You can now chat with the AI agent.');
+        }
+        return { authorized: false };
+    }
+
+    if (bot) {
+        await bot.api.sendMessage(chatId, 'You are not authorized to use this bot. Please enter a valid pairing code.');
+    }
+    return { authorized: false };
+}
+
+function attemptPairingByCode({ code, channel }: AttemptPairingParams): boolean {
+    const result = telegramPairing.validateCode(code);
+    return result !== null && result.channelId === channel.id;
+}
+
 type TelegramPhotoSize = {
     file_id: string;
     file_unique_id: string;
     width: number;
     height: number;
     file_size?: number;
+};
+
+type EnforcePairingParams = {
+    channelId: string;
+    chatId: string;
+    messageText: string;
+    bot: Bot | undefined;
+};
+
+type EnforcePairingResult = {
+    authorized: boolean;
+};
+
+type AttemptPairingParams = {
+    code: string;
+    channel: SettingsChannelConfig;
 };
