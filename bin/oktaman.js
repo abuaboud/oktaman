@@ -7,22 +7,25 @@ const fs = require('fs');
 
 // Determine app data directory
 const appDataDir = path.join(os.homedir(), '.oktaman');
-const dbPath = path.join(appDataDir, 'data.db');
-
 // Ensure app data directory exists
 if (!fs.existsSync(appDataDir)) {
   fs.mkdirSync(appDataDir, { recursive: true });
   console.log(`Created app data directory: ${appDataDir}`);
 }
 
-console.log('\n╔════════════════════════════════════════╗');
-console.log('║                                        ║');
-console.log('║          🌙 OktaMan v0.1.0             ║');
-console.log('║     Your Local AI Assistant            ║');
-console.log('║                                        ║');
-console.log('╚════════════════════════════════════════╝\n');
-console.log('📁 Data directory:', appDataDir);
-console.log('💾 Database:', dbPath);
+const url = 'http://localhost:4321';
+
+console.log('');
+console.log('\x1b[38;2;75;0;130m   ___  _    _        __  __             \x1b[0m');
+console.log('\x1b[38;2;75;0;130m  / _ \\| | _| |_ __ _|  \\/  | __ _ _ __  \x1b[0m');
+console.log('\x1b[38;2;75;0;130m | | | | |/ / __/ _` | |\\/| |/ _` | \'_ \\ \x1b[0m');
+console.log('\x1b[38;2;75;0;130m | |_| |   <| || (_| | |  | | (_| | | | |\x1b[0m');
+console.log('\x1b[38;2;75;0;130m  \\___/|_|\\_\\\\__\\__,_|_|  |_|\\__,_|_| |_|\x1b[0m');
+console.log('');
+console.log(`  v0.1.0 (beta)          ${url}`);
+console.log('');
+console.log('  \x1b[33mWarning: OktaMan has full access to your computer.');
+console.log('  The CLI is still in beta — use at your own risk.\x1b[0m');
 console.log('');
 
 // Path to the server
@@ -50,26 +53,31 @@ server.on('error', (err) => {
   process.exit(1);
 });
 
-// Wait a moment for server to start, then open browser
-setTimeout(async () => {
-  const url = 'http://localhost:4321';
-  console.log('┌──────────────────────────────────────┐');
-  console.log('│  ✨ OktaMan is ready!                 │');
-  console.log('│                                      │');
-  console.log(`│  🌐 ${url}              │`);
-  console.log('│                                      │');
-  console.log('│  Press Ctrl+C to stop                │');
-  console.log('└──────────────────────────────────────┘\n');
-
-  try {
-    const open = (await import('open')).default;
-    await open(url);
-    console.log('🚀 Opening browser...\n');
-  } catch (err) {
-    console.log('⚠️  Could not open browser automatically');
-    console.log(`   Please open: ${url}\n`);
-  }
+// Wait a moment for server to start, then show ready message
+setTimeout(() => {
+  console.log('  Ready! Press \x1b[1mo\x1b[0m to open in browser, \x1b[1mCtrl+C\x1b[0m to stop.\n');
 }, 3000);
+
+// Listen for 'o' keypress to open browser
+if (process.stdin.isTTY) {
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', async (key) => {
+    if (key === 'o' || key === 'O') {
+      try {
+        const open = (await import('open')).default;
+        await open(url);
+      } catch (_) {
+        console.log(`  Could not open browser. Visit: ${url}\n`);
+      }
+    }
+    // Ctrl+C
+    if (key === '\u0003') {
+      process.emit('SIGINT');
+    }
+  });
+}
 
 // Handle cleanup
 process.on('SIGINT', () => {
