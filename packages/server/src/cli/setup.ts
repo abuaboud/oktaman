@@ -41,22 +41,26 @@ async function main() {
         process.exit(1)
     }
 
-    const hasExistingConfig = currentSettings.provider !== null
+    const hasProviderKey = currentSettings.provider !== null
+    const hasToolsConfig = !!(currentSettings.firecrawlApiKey || currentSettings.composioApiKey)
+    const hasTelegram = currentSettings.channels.some((c: { type: string }) => c.type === 'TELEGRAM')
 
     // ─── Stage 1: AI Provider (required) ───────────────────────────────
 
     let configureProvider = true
-    if (hasExistingConfig) {
+    if (hasProviderKey) {
         const reconfigure = await p.confirm({
             message: `AI provider is already configured (${currentSettings.provider!.type}). Reconfigure?`,
             initialValue: false,
         })
         if (p.isCancel(reconfigure)) return handleCancel()
         configureProvider = reconfigure
+    } else {
+        p.log.step('Stage 1: AI Provider')
     }
 
     if (configureProvider) {
-        p.log.step('Stage 1: AI Provider')
+        if (hasProviderKey) p.log.step('Stage 1: AI Provider')
 
         const providerType = await p.select({
             message: 'Choose your AI provider',
@@ -75,6 +79,7 @@ async function main() {
         if (providerType !== 'ollama') {
             const keyLabel = providerType === 'openrouter' ? 'OpenRouter' : 'OpenAI'
             const keyHint = providerType === 'openrouter' ? 'Get yours at openrouter.ai/keys' : 'Get yours at platform.openai.com/api-keys'
+            p.log.info(keyHint)
             const keyResult = await p.password({
                 message: `Enter your ${keyLabel} API key`,
                 validate: (val) => {
@@ -84,7 +89,6 @@ async function main() {
             })
             if (p.isCancel(keyResult)) return handleCancel()
             apiKey = keyResult
-            p.log.info(keyHint)
         } else {
             const urlResult = await p.text({
                 message: 'Ollama base URL',
@@ -137,7 +141,6 @@ async function main() {
 
     // ─── Stage 2: Tools (optional) ─────────────────────────────────────
 
-    const hasToolsConfig = currentSettings.firecrawlApiKey || currentSettings.composioApiKey
     let configureToolsPrompt = 'Configure web scraping & integrations?'
     if (hasToolsConfig) {
         configureToolsPrompt = 'Tools are already configured. Reconfigure?'
@@ -208,10 +211,9 @@ async function main() {
 
     // ─── Stage 3: Telegram (optional) ──────────────────────────────────
 
-    const telegramChannel = currentSettings.channels.find((c: { type: string }) => c.type === 'TELEGRAM')
     let configureTelegram = false
 
-    if (telegramChannel) {
+    if (hasTelegram) {
         const reconfigTg = await p.confirm({
             message: 'Telegram bot is already connected. Skip?',
             initialValue: true,
@@ -227,7 +229,7 @@ async function main() {
         configureTelegram = addTg
     }
 
-    if (configureTelegram && !telegramChannel) {
+    if (configureTelegram && !hasTelegram) {
         p.log.step('Stage 3: Telegram')
         p.log.info(
             'How to create a Telegram bot:\n' +
@@ -289,6 +291,7 @@ async function main() {
 
     const summary = finalSettings ?? currentSettings
     p.log.step('Configuration Summary')
+
     p.log.info(
         `  Provider:   ${summary.provider?.type ?? 'not set'}\n` +
         `  Chat model: ${summary.defaultModelId}\n` +

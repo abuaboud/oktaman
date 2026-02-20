@@ -1,7 +1,7 @@
 import http from 'node:http'
 import { tryCatch } from '@oktaman/shared'
 
-const PORT = parseInt(process.env.OKTAMAN_PORT || '4321', 10)
+const PORT = parseInt(process.env.PORT || '4321', 10)
 const BASE = `http://127.0.0.1:${PORT}`
 
 function request<T>(method: string, path: string, body?: unknown): Promise<T> {

@@ -1,4 +1,4 @@
-import { UpdateLlmSettingsRequest, UpdateToolsSettingsRequest, AddSettingsChannelRequest, UpdateSettingsChannelRequest, Settings } from "@oktaman/shared";
+import { UpdateLlmSettingsRequest, UpdateToolsSettingsRequest, AddSettingsChannelRequest, UpdateSettingsChannelRequest } from "@oktaman/shared";
 import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { settingsService } from "./settings.service";
 import { telegramChannelHandler } from "../brain/channels/telegram-channel-handler";
@@ -7,8 +7,7 @@ import { z } from "zod";
 export const settingsController: FastifyPluginAsyncZod = async (app) => {
 
     app.get('/', GetSettingsConfig, async () => {
-        const settings = await settingsService.getOrCreate();
-        return maskSensitiveData(settings);
+        return await settingsService.getOrCreate();
     });
 
     app.get('/validation', ValidationConfig, async () => {
@@ -16,13 +15,11 @@ export const settingsController: FastifyPluginAsyncZod = async (app) => {
     });
 
     app.put('/llm', UpdateLlmConfig, async (request) => {
-        const settings = await settingsService.updateLlmSettings(request.body);
-        return maskSensitiveData(settings);
+        return await settingsService.updateLlmSettings(request.body);
     });
 
     app.put('/tools', UpdateToolsConfig, async (request) => {
-        const settings = await settingsService.updateToolsSettings(request.body);
-        return maskSensitiveData(settings);
+        return await settingsService.updateToolsSettings(request.body);
     });
 
     app.post('/channels', AddChannelConfig, async (request) => {
@@ -43,15 +40,14 @@ export const settingsController: FastifyPluginAsyncZod = async (app) => {
             }
         }
 
-        return maskSensitiveData(settings);
+        return settings;
     });
 
     app.put('/channels/:channelId', UpdateChannelConfig, async (request) => {
-        const settings = await settingsService.updateChannel({
+        return await settingsService.updateChannel({
             channelId: request.params.channelId,
             request: request.body
         });
-        return maskSensitiveData(settings);
     });
 
     app.delete('/channels/:channelId', DeleteChannelConfig, async (request) => {
@@ -63,19 +59,13 @@ export const settingsController: FastifyPluginAsyncZod = async (app) => {
             await telegramChannelHandler.stopBot(channel.config.botToken as string);
         }
 
-        const updatedSettings = await settingsService.removeChannel(request.params.channelId);
-        return maskSensitiveData(updatedSettings);
+        return await settingsService.removeChannel(request.params.channelId);
     });
 
     app.post('/complete', CompleteSetupConfig, async () => {
-        const settings = await settingsService.completeSetup();
-        return maskSensitiveData(settings);
+        return await settingsService.completeSetup();
     });
 };
-
-function maskSensitiveData(settings: Settings): Settings {
-    return settings;
-}
 
 const GetSettingsConfig = {
     schema: {

@@ -6,15 +6,13 @@ import { homedir } from 'os';
 dotenv.config({ path:  path.join(process.cwd(), '.env') });
 
 // Base directory for all OktaMan data
-const OKTAMAN_HOME = path.join(homedir(), '.oktaman');
+export const OKTAMAN_HOME = path.join(homedir(), '.oktaman');
 
 export const LOG_LEVEL = env.get('LOG_LEVEL').default('info').asString()
 
 export const HOST = env.get('HOST').default('127.0.0.1').asString()
-export const PORT = env.get('PORT').default(3333).asInt()
+export const PORT = env.get('PORT').default(4321).asInt()
 
-// Database configuration for SQLite - now in ~/.oktaman/
-export const DB_PATH = env.get('DB_PATH').default(path.join(OKTAMAN_HOME, 'data.db')).asString()
 
 // Working directory for command execution - ~/.oktaman/home/
 export const WORKING_DIR = env.get('WORKING_DIR').default(path.join(OKTAMAN_HOME, 'home')).asString()

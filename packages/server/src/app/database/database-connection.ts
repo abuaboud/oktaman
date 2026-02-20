@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { DB_PATH } from '../common/system';
+import { OKTAMAN_HOME } from '../common/system';
 import * as path from 'path';
 import { SessionEntitySchema } from '../brain/session.entity';
 import { SessionSubscriber } from '../brain/session.subscriber';
@@ -10,7 +10,7 @@ import { SettingsEntitySchema } from '../settings/settings.entity';
 
 export const databaseConnection = new DataSource({
     type: 'better-sqlite3',
-    database: DB_PATH,
+    database: path.join(OKTAMAN_HOME, 'data.db'),
     synchronize: true,
     logging: false,
     entities: [
@@ -31,7 +31,7 @@ export const databaseConnection = new DataSource({
 export const initializeDatabase = async () => {
     try {
         await databaseConnection.initialize();
-        console.log('SQLite database initialized at:', DB_PATH);
+        console.log('SQLite database initialized at:', path.join(OKTAMAN_HOME, 'data.db'));
 
         // TODO: Load sqlite-vss extension for vector similarity search
         // This will be configured in the memory block service

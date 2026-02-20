@@ -7,10 +7,6 @@ const settingsRepository = () => databaseConnection.getRepository(SettingsEntity
 
 const SINGLETON_ID = 'settings_singleton';
 
-function isMaskedKey(key: string): boolean {
-    return key.includes('...');
-}
-
 async function getOrCreate(): Promise<Settings> {
     let settings = await settingsRepository().findOne({
         where: { id: SINGLETON_ID }
@@ -29,18 +25,7 @@ async function getOrCreate(): Promise<Settings> {
             setupCompleted: false,
         });
 
-        await settingsRepository().save(settings);
-    }
-
-    // Auto-migrate legacy openRouterApiKey to provider
-    const raw = settings as Settings & { openRouterApiKey?: string | null };
-    if (raw.openRouterApiKey && !settings.provider) {
-        logger.info('[SettingsService] Migrating legacy openRouterApiKey to provider config');
-        settings.provider = {
-            type: 'openrouter',
-            apiKey: raw.openRouterApiKey,
-        };
-        await settingsRepository().save(settings);
+        return await settingsRepository().save(settings);
     }
 
     return settings;
@@ -50,10 +35,6 @@ async function updateLlmSettings(request: UpdateLlmSettingsRequest): Promise<Set
     const settings = await getOrCreate();
 
     if (request.provider !== undefined) {
-        if (request.provider.apiKey && isMaskedKey(request.provider.apiKey)) {
-            // Keep existing API key if masked value was sent back
-            request.provider.apiKey = settings.provider?.apiKey;
-        }
         settings.provider = request.provider;
     }
     if (request.defaultModelId !== undefined) {
@@ -69,13 +50,13 @@ async function updateLlmSettings(request: UpdateLlmSettingsRequest): Promise<Set
 async function updateToolsSettings(request: UpdateToolsSettingsRequest): Promise<Settings> {
     const settings = await getOrCreate();
 
-    if (request.composioApiKey !== undefined && !isMaskedKey(request.composioApiKey)) {
+    if (request.composioApiKey !== undefined) {
         settings.composioApiKey = request.composioApiKey;
     }
-    if (request.composioWebhookSecret !== undefined && !isMaskedKey(request.composioWebhookSecret)) {
+    if (request.composioWebhookSecret !== undefined) {
         settings.composioWebhookSecret = request.composioWebhookSecret;
     }
-    if (request.firecrawlApiKey !== undefined && !isMaskedKey(request.firecrawlApiKey)) {
+    if (request.firecrawlApiKey !== undefined) {
         settings.firecrawlApiKey = request.firecrawlApiKey;
     }
     await settingsRepository().save(settings);
