@@ -251,7 +251,7 @@ async function handleMessage(ctx: Context, channel: SettingsChannelConfig): Prom
                         if (part.message.trim().length === 0) {
                             continue;
                         }
-                        const telegramMessage = telegramifyMarkdown(part.message, 'remove');
+                        const telegramMessage = telegramifyMarkdown(part.message, 'escape');
                         if (telegramMessage.trim().length === 0) {
                             continue;
                         }
