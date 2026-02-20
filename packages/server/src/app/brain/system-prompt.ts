@@ -6,25 +6,40 @@ import { loadPromptFiles } from './prompts/prompt-loader';
 import { ToolName } from './tool-constructor';
 import { WORKING_DIR } from '../common/system';
 
-const TOOL_PROMPTS: Record<string, string> = {
-    [ToolName.EXECUTE_BASH]: loadPrompt('./tools/execute-bash/tool.md'),
-    [ToolName.ASK_QUESTION]: loadPrompt('./tools/ask-question/tool.md'),
-    [ToolName.CREATE_AGENT]: loadPrompt('./tools/agent/tool.md'),
-    [ToolName.LIST_COMPOSIO_TRIGGERS]: loadPrompt('./tools/agent/composio-tool.md'),
-    [ToolName.MEMORY_STORE]: loadPrompt('./tools/memory/tool.md'),
-    [ToolName.WRITE_TODOS]: loadPrompt('./tools/planning/tool.md'),
-};
+// Each group maps a shared prompt to the tools that use it.
+// The prompt section is included if any tool in the group is not excluded.
+const TOOL_PROMPT_GROUPS: ToolPromptGroup[] = [
+    {
+        prompt: loadPrompt('./tools/execute-bash/tool.md'),
+        tools: [ToolName.EXECUTE_BASH],
+    },
+    {
+        prompt: loadPrompt('./tools/ask-question/tool.md'),
+        tools: [ToolName.ASK_QUESTION],
+    },
+    {
+        prompt: loadPrompt('./tools/agent/tool.md'),
+        tools: [ToolName.CREATE_AGENT, ToolName.UPDATE_AGENT, ToolName.LIST_AGENTS],
+    },
+    {
+        prompt: loadPrompt('./tools/agent/composio-tool.md'),
+        tools: [ToolName.LIST_COMPOSIO_TRIGGERS],
+    },
+    {
+        prompt: loadPrompt('./tools/memory/tool.md'),
+        tools: [ToolName.MEMORY_STORE, ToolName.MEMORY_SEARCH, ToolName.MEMORY_FORGET],
+    },
+    {
+        prompt: loadPrompt('./tools/planning/tool.md'),
+        tools: [ToolName.WRITE_TODOS, ToolName.READ_TODOS],
+    },
+    {
+        prompt: loadPrompt('./tools/firecrawl/tool.md'),
+        tools: [ToolName.FIRECRAWL_SEARCH, ToolName.FIRECRAWL_SCRAPE, ToolName.FIRECRAWL_CRAWL, ToolName.FIRECRAWL_BATCH_SCRAPE, ToolName.FIRECRAWL_EXTRACT],
+    },
+];
 
 const AGENT_CONTEXT_PROMPT_TEMPLATE = loadPrompt('./tools/agent/agent-prompt.md');
-
-// Tools that share a prompt section — if one is included, the section is included
-const TOOL_PROMPT_ALIASES: Record<string, string> = {
-    [ToolName.UPDATE_AGENT]: ToolName.CREATE_AGENT,
-    [ToolName.LIST_AGENTS]: ToolName.CREATE_AGENT,
-    [ToolName.MEMORY_SEARCH]: ToolName.MEMORY_STORE,
-    [ToolName.MEMORY_FORGET]: ToolName.MEMORY_STORE,
-    [ToolName.READ_TODOS]: ToolName.WRITE_TODOS,
-};
 
 export async function buildMainSystemPrompt(options: MainSystemPromptOptions): Promise<string> {
     const { agentContext, session, excludedTools = [] } = options;
@@ -80,23 +95,10 @@ ${skillsPrompt ? `\n\n${skillsPrompt}` : ''}
 }
 
 function buildToolSections(excludedTools: ToolName[]): string {
-    const includedSections = new Set<string>();
-
-    for (const [toolName, prompt] of Object.entries(TOOL_PROMPTS)) {
-        // Check if this tool or any alias pointing to it is not excluded
-        const aliasedTools = Object.entries(TOOL_PROMPT_ALIASES)
-            .filter(([, target]) => target === toolName)
-            .map(([alias]) => alias);
-
-        const allToolsInGroup = [toolName, ...aliasedTools];
-        const anyIncluded = allToolsInGroup.some(t => !excludedTools.includes(t as ToolName));
-
-        if (anyIncluded) {
-            includedSections.add(prompt);
-        }
-    }
-
-    return Array.from(includedSections).join('\n\n---\n\n');
+    return TOOL_PROMPT_GROUPS
+        .filter(group => group.tools.some(t => !excludedTools.includes(t)))
+        .map(group => group.prompt)
+        .join('\n\n---\n\n');
 }
 
 function loadPrompt(relativePath: string): string {
@@ -146,4 +148,9 @@ type MainSystemPromptOptions = {
         name: string;
         description: string;
     };
+}
+
+type ToolPromptGroup = {
+    prompt: string;
+    tools: ToolName[];
 }

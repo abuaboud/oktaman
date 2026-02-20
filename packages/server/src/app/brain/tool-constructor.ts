@@ -132,32 +132,59 @@ export async function constructTools(config: ToolConstructorConfig): Promise<Con
     }
 
     // Firecrawl Tools
-    const firecrawlTools = await createFirecrawlTools();
+    const firecrawlTools = await buildFirecrawlTools();
 
-    if (shouldIncludeTool(ToolName.FIRECRAWL_SCRAPE) && firecrawlTools[ToolName.FIRECRAWL_SCRAPE]) {
-        allTools[ToolName.FIRECRAWL_SCRAPE] = firecrawlTools[ToolName.FIRECRAWL_SCRAPE];
-    }
+    if (Object.keys(firecrawlTools).length === 0) {
+        excludedTools.push(
+            ToolName.FIRECRAWL_SCRAPE,
+            ToolName.FIRECRAWL_SEARCH,
+            ToolName.FIRECRAWL_CRAWL,
+            ToolName.FIRECRAWL_BATCH_SCRAPE,
+            ToolName.FIRECRAWL_EXTRACT,
+        );
+    } else {
+        if (shouldIncludeTool(ToolName.FIRECRAWL_SCRAPE) && firecrawlTools[ToolName.FIRECRAWL_SCRAPE]) {
+            allTools[ToolName.FIRECRAWL_SCRAPE] = firecrawlTools[ToolName.FIRECRAWL_SCRAPE];
+        }
 
-    if (shouldIncludeTool(ToolName.FIRECRAWL_SEARCH) && firecrawlTools[ToolName.FIRECRAWL_SEARCH]) {
-        allTools[ToolName.FIRECRAWL_SEARCH] = firecrawlTools[ToolName.FIRECRAWL_SEARCH];
-    }
+        if (shouldIncludeTool(ToolName.FIRECRAWL_SEARCH) && firecrawlTools[ToolName.FIRECRAWL_SEARCH]) {
+            allTools[ToolName.FIRECRAWL_SEARCH] = firecrawlTools[ToolName.FIRECRAWL_SEARCH];
+        }
 
-    if (shouldIncludeTool(ToolName.FIRECRAWL_CRAWL) && firecrawlTools[ToolName.FIRECRAWL_CRAWL]) {
-        allTools[ToolName.FIRECRAWL_CRAWL] = firecrawlTools[ToolName.FIRECRAWL_CRAWL];
-    }
+        if (shouldIncludeTool(ToolName.FIRECRAWL_CRAWL) && firecrawlTools[ToolName.FIRECRAWL_CRAWL]) {
+            allTools[ToolName.FIRECRAWL_CRAWL] = firecrawlTools[ToolName.FIRECRAWL_CRAWL];
+        }
 
-    if (shouldIncludeTool(ToolName.FIRECRAWL_BATCH_SCRAPE) && firecrawlTools[ToolName.FIRECRAWL_BATCH_SCRAPE]) {
-        allTools[ToolName.FIRECRAWL_BATCH_SCRAPE] = firecrawlTools[ToolName.FIRECRAWL_BATCH_SCRAPE];
-    }
+        if (shouldIncludeTool(ToolName.FIRECRAWL_BATCH_SCRAPE) && firecrawlTools[ToolName.FIRECRAWL_BATCH_SCRAPE]) {
+            allTools[ToolName.FIRECRAWL_BATCH_SCRAPE] = firecrawlTools[ToolName.FIRECRAWL_BATCH_SCRAPE];
+        }
 
-    if (shouldIncludeTool(ToolName.FIRECRAWL_EXTRACT) && firecrawlTools[ToolName.FIRECRAWL_EXTRACT]) {
-        allTools[ToolName.FIRECRAWL_EXTRACT] = firecrawlTools[ToolName.FIRECRAWL_EXTRACT];
+        if (shouldIncludeTool(ToolName.FIRECRAWL_EXTRACT) && firecrawlTools[ToolName.FIRECRAWL_EXTRACT]) {
+            allTools[ToolName.FIRECRAWL_EXTRACT] = firecrawlTools[ToolName.FIRECRAWL_EXTRACT];
+        }
     }
 
     // Add Composio tools
     Object.assign(allTools, composioTools);
 
     return { tools: allTools, excludedTools };
+}
+
+async function buildFirecrawlTools(): Promise<Record<string, Tool>> {
+    const firecrawlApiKey = await settingsService.getEffectiveApiKey('firecrawl');
+    if (!firecrawlApiKey) {
+        logger.info('[ToolConstructor] No Firecrawl API key configured, skipping Firecrawl tools');
+        return {};
+    }
+
+    process.env.FIRECRAWL_API_KEY = firecrawlApiKey;
+
+    const [error, tools] = await tryCatch(createFirecrawlTools());
+    if (error) {
+        logger.warn({ error }, '[ToolConstructor] Failed to initialize Firecrawl tools, continuing without them');
+        return {};
+    }
+    return tools;
 }
 
 async function buildComposioTools(): Promise<Record<string, Tool>> {
