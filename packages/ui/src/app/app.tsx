@@ -21,7 +21,7 @@ function RootLayout() {
 
   useEffect(() => {
     if (validation && !validation.isValid && location.pathname !== '/settings') {
-      toast.error('OpenRouter API key required. Please configure your settings.');
+      toast.error('AI provider API key required. Please configure your settings.');
       navigate('/settings');
     }
   }, [validation, location.pathname, navigate]);

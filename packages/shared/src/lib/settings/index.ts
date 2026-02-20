@@ -1,6 +1,17 @@
 import { BaseModelSchema } from '../common'
 import { z } from 'zod'
 
+// Provider types for AI model configuration
+export const ProviderType = z.enum(['openrouter', 'openai', 'ollama'])
+export type ProviderType = z.infer<typeof ProviderType>
+
+export const ProviderConfig = z.object({
+    type: ProviderType,
+    apiKey: z.string().optional(),
+    baseUrl: z.string().optional(),
+})
+export type ProviderConfig = z.infer<typeof ProviderConfig>
+
 // Channel configuration stored in Settings (renamed to avoid conflict with channel/index.ts)
 export const SettingsChannelConfig = z.object({
     id: z.string(),
@@ -17,10 +28,9 @@ export type SettingsChannelConfig = z.infer<typeof SettingsChannelConfig>
 // Main Settings entity (singleton pattern)
 export const Settings = BaseModelSchema.extend({
     // LLM Configuration
-    openRouterApiKey: z.string().nullable(),
+    provider: ProviderConfig.nullable(),
     defaultModelId: z.string().default('moonshotai/kimi-k2.5'),
     embeddingModelId: z.string().default('openai/text-embedding-3-small'),
-    agentModelId: z.string().default('moonshotai/kimi-k2.5'),
 
     // Tools Configuration
     composioApiKey: z.string().nullable(),
@@ -38,10 +48,9 @@ export type Settings = z.infer<typeof Settings>
 
 // API Request Types
 export const UpdateLlmSettingsRequest = z.object({
-    openRouterApiKey: z.string().optional(),
+    provider: ProviderConfig.optional(),
     defaultModelId: z.string().optional(),
     embeddingModelId: z.string().optional(),
-    agentModelId: z.string().optional(),
 })
 
 export type UpdateLlmSettingsRequest = z.infer<typeof UpdateLlmSettingsRequest>

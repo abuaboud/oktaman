@@ -91,7 +91,7 @@ export const agentService = {
             trigger: params.trigger,
             instructions: params.instructions,
             status: AgentStatus.ENABLED,
-            modelId: params.modelId ?? (await settingsService.getOrCreate()).agentModelId,
+            modelId: params.modelId ?? (await settingsService.getOrCreate()).defaultModelId,
             color: randomColor,
             created: dayjs().toDate(),
             updated: dayjs().toDate(),
@@ -182,7 +182,7 @@ ${JSON.stringify(triggerData, null, 2)}`
                 userMessage: userMessage,
                 agentId: agent.id,
                 userId: 'system',
-                modelId: agent.modelId || (await settingsService.getOrCreate()).agentModelId,
+                modelId: agent.modelId || (await settingsService.getOrCreate()).defaultModelId,
                 source: SessionSource.AUTOMATION,
                 isTest: isTest,
             })

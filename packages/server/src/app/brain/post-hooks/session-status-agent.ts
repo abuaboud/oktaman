@@ -1,9 +1,9 @@
-import { AgentSessionStatus, ConversationMessage, SessionSource } from "@oktaman/shared";
+import { AgentSessionStatus, ConversationMessage, ProviderConfig, SessionSource } from "@oktaman/shared";
 import { generateObject } from "ai";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { logger } from "../../common/logger";
 import { z } from "zod";
 import { settingsService } from "../../settings/settings.service";
+import { createModel } from "../../settings/providers";
 
 const SYSTEM_PROMPT = `You are a session status analyzer.
 
@@ -46,7 +46,7 @@ const statusSchema = z.object({
 
 
 export const sessionStatusAgent = {
-    async determineStatus(source: SessionSource, openRouterKey: string, messages: ConversationMessage[]): Promise<AgentSessionStatus> {
+    async determineStatus(source: SessionSource, providerConfig: ProviderConfig, messages: ConversationMessage[]): Promise<AgentSessionStatus> {
         if (source !== SessionSource.AUTOMATION) {
             return AgentSessionStatus.CLOSED;
         }
@@ -60,12 +60,10 @@ export const sessionStatusAgent = {
             const { lastUserMessage, lastAssistantMessage } = lastMessages;
 
             const settings = await settingsService.getOrCreate();
-            const openrouter = createOpenRouter({
-                apiKey: openRouterKey,
-            });
+            const model = createModel(providerConfig, settings.defaultModelId);
 
             const { object } = await generateObject({
-                model: openrouter(settings.agentModelId),
+                model,
                 system: SYSTEM_PROMPT,
                 prompt: `Last user message: ${lastUserMessage}
 

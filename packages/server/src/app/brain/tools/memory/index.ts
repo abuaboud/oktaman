@@ -1,5 +1,6 @@
 import { Tool, tool } from 'ai'
 import { z } from 'zod'
+import { ProviderConfig } from '@oktaman/shared'
 import { memoryBlockService } from '../../../memory-block/memory-block.service'
 
 // Tool names
@@ -71,7 +72,7 @@ const memoryForgetInputSchema = z.object({
 })
 
 // Tool creator
-export function createMemoryTools(openRouterKey: string): Record<string, Tool> {
+export function createMemoryTools(providerConfig: ProviderConfig): Record<string, Tool> {
 
     return {
         [MEMORY_STORE_TOOL_NAME]: tool({
@@ -81,7 +82,7 @@ export function createMemoryTools(openRouterKey: string): Record<string, Tool> {
                 try {
                     const memory = await memoryBlockService.store({
                         content,
-                        openRouterKey,
+                        providerConfig,
                     });
 
                     return {
@@ -106,7 +107,7 @@ export function createMemoryTools(openRouterKey: string): Record<string, Tool> {
                 try {
                     const memories = await memoryBlockService.search({
                         queryString,
-                        openRouterKey,
+                        providerConfig,
                     });
 
                     return {

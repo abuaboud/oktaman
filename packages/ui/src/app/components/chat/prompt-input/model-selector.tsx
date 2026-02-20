@@ -7,54 +7,122 @@ import {
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { ProviderType } from '@oktaman/shared';
 
-const MODELS: AIModel[] = [
-  {
-    id: 'anthropic/claude-opus-4-5',
-    name: 'Claude Opus 4.5',
-    provider: 'anthropic',
-    logo: 'https://models.dev/logos/anthropic.svg',
-  },
-  {
-    id: 'anthropic/claude-sonnet-4.5',
-    name: 'Claude Sonnet 4.5',
-    provider: 'anthropic',
-    logo: 'https://models.dev/logos/anthropic.svg',
-  },
-  {
-    id: 'google/gemini-3-pro-preview',
-    name: 'Gemini 3 Pro',
-    provider: 'google',
-    logo: 'https://models.dev/logos/google.svg',
-  },
-  {
-    id: 'moonshotai/kimi-k2.5',
-    name: 'Kimi K2.5',
-    provider: 'moonshotai',
-    logo: 'https://models.dev/logos/moonshotai.svg',
-  },
-  {
-    id: 'minimax/minimax-m2.5',
-    name: 'MiniMax M2.5',
-    provider: 'minimax',
-    logo: 'https://models.dev/logos/minimax.svg',
-  },
-];
+const PROVIDER_MODELS: Record<ProviderType, AIModel[]> = {
+  openrouter: [
+    {
+      id: 'anthropic/claude-sonnet-4.6',
+      name: 'Claude Sonnet 4.6',
+      provider: 'anthropic',
+      logo: 'https://models.dev/logos/anthropic.svg',
+    },
+    {
+      id: 'google/gemini-3.1-pro-preview',
+      name: 'Gemini 3.1 Pro',
+      provider: 'google',
+      logo: 'https://models.dev/logos/google.svg',
+    },
+    {
+      id: 'qwen/qwen3.5-plus-02-15',
+      name: 'Qwen 3.5 Plus',
+      provider: 'qwen',
+      logo: 'https://models.dev/logos/qwen.svg',
+    },
+    {
+      id: 'moonshotai/kimi-k2.5',
+      name: 'Kimi K2.5',
+      provider: 'moonshotai',
+      logo: 'https://models.dev/logos/moonshotai.svg',
+    },
+    {
+      id: 'minimax/minimax-m2.5',
+      name: 'MiniMax M2.5',
+      provider: 'minimax',
+      logo: 'https://models.dev/logos/minimax.svg',
+    },
+  ],
+  openai: [
+    {
+      id: 'gpt-5.2',
+      name: 'GPT-5.2',
+      provider: 'openai',
+      logo: 'https://models.dev/logos/openai.svg',
+    },
+  ],
+  ollama: [
+    {
+      id: 'kimi-k2.5:cloud',
+      name: 'Kimi K2.5',
+      provider: 'ollama',
+      logo: 'https://models.dev/logos/moonshotai.svg',
+    },
+    {
+      id: 'minimax-m2.5:cloud',
+      name: 'MiniMax M2.5',
+      provider: 'ollama',
+      logo: 'https://models.dev/logos/minimax.svg',
+    },
+  ],
+};
 
-const EMBEDDING_MODELS: AIModel[] = [
-  {
-    id: 'openai/text-embedding-3-small',
-    name: 'Embedding 3 Small',
-    provider: 'openai',
-    logo: 'https://models.dev/logos/openai.svg',
+const PROVIDER_EMBEDDING_MODELS: Record<ProviderType, AIModel[]> = {
+  openrouter: [
+    {
+      id: 'openai/text-embedding-3-small',
+      name: 'Embedding 3 Small',
+      provider: 'openai',
+      logo: 'https://models.dev/logos/openai.svg',
+    },
+    {
+      id: 'openai/text-embedding-3-large',
+      name: 'Embedding 3 Large',
+      provider: 'openai',
+      logo: 'https://models.dev/logos/openai.svg',
+    },
+  ],
+  openai: [
+    {
+      id: 'text-embedding-3-small',
+      name: 'Embedding 3 Small',
+      provider: 'openai',
+      logo: 'https://models.dev/logos/openai.svg',
+    },
+    {
+      id: 'text-embedding-3-large',
+      name: 'Embedding 3 Large',
+      provider: 'openai',
+      logo: 'https://models.dev/logos/openai.svg',
+    },
+  ],
+  ollama: [
+    {
+      id: 'nomic-embed-text',
+      name: 'Nomic Embed Text',
+      provider: 'ollama',
+      logo: 'https://models.dev/logos/meta.svg',
+    },
+  ],
+};
+
+const DEFAULT_MODELS: Record<ProviderType, { chat: string; embedding: string }> = {
+  openrouter: {
+    chat: 'moonshotai/kimi-k2.5',
+    embedding: 'openai/text-embedding-3-small',
   },
-  {
-    id: 'openai/text-embedding-3-large',
-    name: 'Embedding 3 Large',
-    provider: 'openai',
-    logo: 'https://models.dev/logos/openai.svg',
+  openai: {
+    chat: 'gpt-5.2',
+    embedding: 'text-embedding-3-small',
   },
-];
+  ollama: {
+    chat: 'kimi-k2.5:cloud',
+    embedding: 'nomic-embed-text',
+  },
+};
+
+// Backward-compat exports
+const MODELS = PROVIDER_MODELS.openrouter;
+const EMBEDDING_MODELS = PROVIDER_EMBEDDING_MODELS.openrouter;
 
 function findModelById(modelId: string, modelList: AIModel[]): AIModel | undefined {
   return modelList.find((m) => m.id === modelId);
@@ -121,7 +189,7 @@ export const ModelSelector = ({ selectedModel, onModelChange, disabled, models, 
   );
 };
 
-export { MODELS, EMBEDDING_MODELS, findModelById };
+export { MODELS, EMBEDDING_MODELS, PROVIDER_MODELS, PROVIDER_EMBEDDING_MODELS, DEFAULT_MODELS, findModelById };
 
 export type AIModel = {
   id: string;

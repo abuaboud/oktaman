@@ -3,12 +3,11 @@ import { apSessionId, Session, SessionMetadata, Conversation, OktaManError, Okta
 import { SessionEntitySchema } from './session.entity';
 import dayjs from 'dayjs';
 import { generateText } from 'ai';
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { websocketService } from '../core/websockets';
 import { logger } from '../common/logger';
 import { settingsService } from '../settings/settings.service';
 import { geolocationService } from '../common/geolocation.service';
-import { log } from 'node:console';
+import { createModel } from '../settings/providers';
 
 const sessionRepository = databaseConnection.getRepository<Session>(SessionEntitySchema);
 
@@ -140,19 +139,18 @@ export const sessionService = {
 };
 
 async function generateAndEmitSessionTitle(sessionId: string, userMessage: string): Promise<void> {
-    const openRouterApiKey = await settingsService.getEffectiveApiKey('openrouter');
-    if (!openRouterApiKey) {
-        logger.warn({ sessionId }, '[SessionService] No OpenRouter API key configured, skipping title generation');
+    const providerConfig = await settingsService.getProviderConfig();
+    if (!providerConfig) {
+        logger.warn({ sessionId }, '[SessionService] No AI provider configured, skipping title generation');
         return;
     }
-    logger.info({ sessionId }, '[SessionService] Generating session title using OpenRouter');
+    logger.info({ sessionId }, '[SessionService] Generating session title');
 
-    const openrouter = createOpenRouter({
-        apiKey: openRouterApiKey,
-    });
+    const settings = await settingsService.getOrCreate();
+    const model = createModel(providerConfig, settings.defaultModelId);
 
     const { text } = await generateText({
-        model: openrouter((await settingsService.getOrCreate()).defaultModelId),
+        model,
         prompt: `Generate a very short (3-5 words maximum) title for a chat conversation that starts with this user message. The title should capture the main topic or intent. Only return the title, nothing else.
 
 User message: ${userMessage}`,

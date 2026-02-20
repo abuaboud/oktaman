@@ -5,18 +5,20 @@ export type ModelConfig = {
 
 export const MODEL_CONFIGS: Record<string, ModelConfig> = {
     // Anthropic models
-    'anthropic/claude-opus-4-5': {
-        maxTokens: 200000,
-        compactionThreshold: 0.8, // Compact at 80% usage
-    },
-    'anthropic/claude-sonnet-4.5': {
+    'anthropic/claude-sonnet-4.6': {
         maxTokens: 200000,
         compactionThreshold: 0.8,
     },
 
     // Google models
-    'google/gemini-3-pro-preview': {
+    'google/gemini-3.1-pro-preview': {
         maxTokens: 1000000,
+        compactionThreshold: 0.8,
+    },
+
+    // Qwen models
+    'qwen/qwen3.5-plus-02-15': {
+        maxTokens: 128000,
         compactionThreshold: 0.8,
     },
 
@@ -28,6 +30,22 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
 
     // MiniMax models
     'minimax/minimax-m2.5': {
+        maxTokens: 245760,
+        compactionThreshold: 0.8,
+    },
+
+    // OpenAI models
+    'gpt-5.2': {
+        maxTokens: 400000,
+        compactionThreshold: 0.8,
+    },
+
+    // Ollama models
+    'kimi-k2.5:cloud': {
+        maxTokens: 128000,
+        compactionThreshold: 0.8,
+    },
+    'minimax-m2.5:cloud': {
         maxTokens: 245760,
         compactionThreshold: 0.8,
     },

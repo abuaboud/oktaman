@@ -219,7 +219,7 @@ async function handleMessage(ctx: Context, channel: SettingsChannelConfig): Prom
     try {
         const settings = await settingsService.getOrCreate();
         const session = await sessionService.getOrCreateSessionForTelegram({
-            modelId: settings.agentModelId,
+            modelId: settings.defaultModelId,
         });
 
         const files: ConversationFile[] | undefined = await processPhotos(photos, bot, botToken, chatId);
@@ -233,7 +233,7 @@ async function handleMessage(ctx: Context, channel: SettingsChannelConfig): Prom
         });
         await sessionService.update({
             id: session.id,
-            modelId: settings.agentModelId,
+            modelId: settings.defaultModelId,
             conversation: session.conversation,
         });
 

@@ -1,6 +1,5 @@
 import { AgentSessionStatus, AgentStreamingEvent, AgentStreamingUpdate, AgentStreamingUpdateProgressData, AssistantConversationContent, ConversationMessage, isNil, Session, mutexLock, splitTextWithImages } from "@oktaman/shared";
 import { LanguageModelUsage, ModelMessage, ReasoningOutput, TextPart, ToolCallPart, ToolLoopAgent, ToolResultPart } from "ai";
-import { createOpenRouter, OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider";
 import { inspect } from "util";
 import { buildMainSystemPrompt } from "./system-prompt";
 import { compactionService } from "./compaction";
@@ -12,6 +11,7 @@ import { sessionStreamHandler } from "./session-stream-handler";
 import { settingsService } from "../settings/settings.service";
 import { createStopCondition } from "./stop-condition";
 import { constructTools } from "./tool-constructor";
+import { createModel, getProviderOptions, extractCost } from "../settings/providers";
 
 export const oktamanService = {
     chatWithOktaMan: async (session: Session, abortSignal?: AbortSignal, onMessage?: (parts: AssistantConversationContent[]) => void) => {
@@ -30,15 +30,17 @@ async function executeChatWithOktaMan(session: Session, abortSignal?: AbortSigna
     }
 
     try {
-        const openRouterApiKey = await settingsService.getEffectiveApiKey('openrouter');
+        const providerConfig = await settingsService.getProviderConfig();
 
-        if (!openRouterApiKey) {
-            throw new Error('OpenRouter API key not configured. Please configure it in Settings.');
+        if (!providerConfig) {
+            throw new Error('AI provider not configured. Please configure it in Settings.');
         }
 
-        const openrouter = createOpenRouter({
-            apiKey: openRouterApiKey,
-        });
+        if (providerConfig.type !== 'ollama' && !providerConfig.apiKey) {
+            throw new Error(`API key not configured for ${providerConfig.type}. Please configure it in Settings.`);
+        }
+
+        const model = createModel(providerConfig, session.modelId);
 
         let lastStepUsage: LanguageModelUsage | undefined;
         const agentContext = !isNil(session.agentId) ? await agentService.getOne({ id: session.agentId }) : undefined;
@@ -64,11 +66,7 @@ async function executeChatWithOktaMan(session: Session, abortSignal?: AbortSigna
         const systemPrompt = await buildMainSystemPrompt({ agentContext: agentContext ?? undefined, session, excludedTools });
 
         const assistant = new ToolLoopAgent({
-            model: openrouter(session.modelId,
-                {
-                    usage: { include: true },
-                }
-            ),
+            model,
             onStepFinish: async (content) => {
                 lastStepUsage = content.usage;
                 if (content.text.length > 0) {
@@ -78,15 +76,7 @@ async function executeChatWithOktaMan(session: Session, abortSignal?: AbortSigna
                     }
                 }
             },
-            providerOptions: {
-                openrouter: {
-                    reasoning: {
-                        enabled: true,
-                        exclude: false,
-                        effort: 'high',
-                    },
-                } satisfies OpenRouterProviderOptions,
-            },
+            providerOptions: getProviderOptions(providerConfig),
             prepareStep: async ({ messages }) => {
                 const compactNeeded = !isNil(lastStepUsage) && compactionService.needsCompaction(lastStepUsage, session.modelId);
                 if (compactNeeded) {
@@ -138,21 +128,23 @@ async function executeChatWithOktaMan(session: Session, abortSignal?: AbortSigna
                     break
                 }
                 case 'reasoning-delta': {
-                    const reasoningDetails = (chunk.providerMetadata as Record<string, any>)?.openrouter?.['reasoning_details']?.[0];
+                    if (providerConfig.type === 'openrouter') {
+                        const reasoningDetails = (chunk.providerMetadata as Record<string, Record<string, unknown[]>>)?.openrouter?.['reasoning_details']?.[0] as ReasoningDetail | undefined;
 
-                    if (reasoningDetails?.type === 'reasoning.summary' || reasoningDetails?.type === 'reasoning.text') {
-                        const update: AgentStreamingUpdate = {
-                            event: AgentStreamingEvent.AGENT_STREAMING_UPDATE as const,
-                            data: {
-                                sessionId: session.id,
-                                part: {
-                                    type: 'thinking-delta',
-                                    message: reasoningDetails?.text,
-                                    startedAt: new Date().toISOString(),
+                        if (reasoningDetails?.type === 'reasoning.summary' || reasoningDetails?.type === 'reasoning.text') {
+                            const update: AgentStreamingUpdate = {
+                                event: AgentStreamingEvent.AGENT_STREAMING_UPDATE as const,
+                                data: {
+                                    sessionId: session.id,
+                                    part: {
+                                        type: 'thinking-delta',
+                                        message: reasoningDetails?.text,
+                                        startedAt: new Date().toISOString(),
+                                    },
                                 },
-                            },
-                        };
-                        session = await sessionStreamHandler.handleUpdate({ update, session });
+                            };
+                            session = await sessionStreamHandler.handleUpdate({ update, session });
+                        }
                     }
                     break
                 }
@@ -247,7 +239,7 @@ async function executeChatWithOktaMan(session: Session, abortSignal?: AbortSigna
 
         const usage = await result.usage;
         const providerMetadata = await result.providerMetadata;
-        const iterationCost = extractCostFromProviderMetadata(providerMetadata);
+        const iterationCost = extractCost(providerConfig.type, providerMetadata);
 
         // Send cost update to update the last assistant message
         if (iterationCost > 0) {
@@ -267,7 +259,7 @@ async function executeChatWithOktaMan(session: Session, abortSignal?: AbortSigna
             event: AgentStreamingEvent.AGENT_SESSION_UPDATE as const,
             data: {
                 sessionId: session.id,
-                status: await sessionStatusAgent.determineStatus(session.source, openRouterApiKey, session.conversation),
+                status: await sessionStatusAgent.determineStatus(session.source, providerConfig, session.conversation),
                 isStreaming: false,
                 usage: usage,
                 cost: updatedCost,
@@ -303,12 +295,6 @@ async function executeChatWithOktaMan(session: Session, abortSignal?: AbortSigna
     } finally {
         logger.info('[OktaManService] Session completed');
     }
-}
-
-
-function extractCostFromProviderMetadata(providerMetadata: unknown): number {
-    const cost = (providerMetadata as { openrouter?: { usage?: { cost?: number } } })?.openrouter?.usage?.cost;
-    return cost ?? 0;
 }
 
 
@@ -483,4 +469,9 @@ type PublishToolCall = {
     error?: string;
     startedAt?: string;
     completedAt?: string;
+}
+
+type ReasoningDetail = {
+    type: string;
+    text: string;
 }

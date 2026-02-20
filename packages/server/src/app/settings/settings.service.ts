@@ -1,6 +1,7 @@
-import { Settings, UpdateLlmSettingsRequest, UpdateToolsSettingsRequest, AddSettingsChannelRequest, UpdateSettingsChannelRequest, ValidationResult, SettingsChannelConfig, apId, OktaManError, OktaManErrorCode } from '@oktaman/shared';
+import { Settings, UpdateLlmSettingsRequest, UpdateToolsSettingsRequest, AddSettingsChannelRequest, UpdateSettingsChannelRequest, ValidationResult, SettingsChannelConfig, ProviderConfig, apId, OktaManError, OktaManErrorCode } from '@oktaman/shared';
 import { databaseConnection } from '../database/database-connection';
 import { SettingsEntitySchema } from './settings.entity';
+import { logger } from '../common/logger';
 
 const settingsRepository = () => databaseConnection.getRepository(SettingsEntitySchema);
 
@@ -18,10 +19,9 @@ async function getOrCreate(): Promise<Settings> {
     if (!settings) {
         settings = settingsRepository().create({
             id: SINGLETON_ID,
-            openRouterApiKey: null,
+            provider: null,
             defaultModelId: 'moonshotai/kimi-k2.5',
             embeddingModelId: 'openai/text-embedding-3-small',
-            agentModelId: 'moonshotai/kimi-k2.5',
             composioApiKey: null,
             composioWebhookSecret: null,
             firecrawlApiKey: null,
@@ -32,14 +32,29 @@ async function getOrCreate(): Promise<Settings> {
         await settingsRepository().save(settings);
     }
 
+    // Auto-migrate legacy openRouterApiKey to provider
+    const raw = settings as Settings & { openRouterApiKey?: string | null };
+    if (raw.openRouterApiKey && !settings.provider) {
+        logger.info('[SettingsService] Migrating legacy openRouterApiKey to provider config');
+        settings.provider = {
+            type: 'openrouter',
+            apiKey: raw.openRouterApiKey,
+        };
+        await settingsRepository().save(settings);
+    }
+
     return settings;
 }
 
 async function updateLlmSettings(request: UpdateLlmSettingsRequest): Promise<Settings> {
     const settings = await getOrCreate();
 
-    if (request.openRouterApiKey !== undefined && !isMaskedKey(request.openRouterApiKey)) {
-        settings.openRouterApiKey = request.openRouterApiKey;
+    if (request.provider !== undefined) {
+        if (request.provider.apiKey && isMaskedKey(request.provider.apiKey)) {
+            // Keep existing API key if masked value was sent back
+            request.provider.apiKey = settings.provider?.apiKey;
+        }
+        settings.provider = request.provider;
     }
     if (request.defaultModelId !== undefined) {
         settings.defaultModelId = request.defaultModelId;
@@ -47,10 +62,6 @@ async function updateLlmSettings(request: UpdateLlmSettingsRequest): Promise<Set
     if (request.embeddingModelId !== undefined) {
         settings.embeddingModelId = request.embeddingModelId;
     }
-    if (request.agentModelId !== undefined) {
-        settings.agentModelId = request.agentModelId;
-    }
-
     await settingsRepository().save(settings);
     return settings;
 }
@@ -142,8 +153,10 @@ async function validateRequired(): Promise<ValidationResult> {
     const missing: string[] = [];
     const warnings: string[] = [];
 
-    if (!settings.openRouterApiKey) {
-        missing.push('OpenRouter API key');
+    if (!settings.provider) {
+        missing.push('AI provider configuration');
+    } else if (settings.provider.type !== 'ollama' && !settings.provider.apiKey) {
+        missing.push('API key for ' + settings.provider.type);
     }
 
     return {
@@ -153,12 +166,10 @@ async function validateRequired(): Promise<ValidationResult> {
     };
 }
 
-async function getEffectiveApiKey(provider: 'openrouter' | 'composio' | 'composio-webhook-secret' | 'firecrawl'): Promise<string | undefined> {
+async function getEffectiveApiKey(provider: 'composio' | 'composio-webhook-secret' | 'firecrawl'): Promise<string | undefined> {
     const settings = await getOrCreate();
 
     switch (provider) {
-        case 'openrouter':
-            return settings.openRouterApiKey || undefined;
         case 'composio':
             return settings.composioApiKey || undefined;
         case 'composio-webhook-secret':
@@ -168,6 +179,11 @@ async function getEffectiveApiKey(provider: 'openrouter' | 'composio' | 'composi
         default:
             return undefined;
     }
+}
+
+async function getProviderConfig(): Promise<ProviderConfig | null> {
+    const settings = await getOrCreate();
+    return settings.provider;
 }
 
 async function completeSetup(): Promise<Settings> {
@@ -186,6 +202,7 @@ export const settingsService = {
     removeChannel,
     validateRequired,
     getEffectiveApiKey,
+    getProviderConfig,
     completeSetup,
 };
 

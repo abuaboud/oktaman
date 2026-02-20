@@ -5,9 +5,10 @@ export const SettingsEntitySchema = new EntitySchema<Settings>({
     name: 'settings',
     columns: {
         ...BaseModelEntityColumns,
-        openRouterApiKey: {
-            type: String,
-            nullable: true
+        provider: {
+            type: 'simple-json',
+            nullable: true,
+            default: null,
         },
         defaultModelId: {
             type: String,
@@ -18,11 +19,6 @@ export const SettingsEntitySchema = new EntitySchema<Settings>({
             type: String,
             nullable: false,
             default: 'openai/text-embedding-3-small'
-        },
-        agentModelId: {
-            type: String,
-            nullable: false,
-            default: 'moonshotai/kimi-k2.5'
         },
         composioApiKey: {
             type: String,

@@ -3,9 +3,10 @@ import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 're
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { isNil, SessionMetadata, ChatWithOktaManRequest } from '@oktaman/shared';
+import { isNil, SessionMetadata, ChatWithOktaManRequest, ProviderType } from '@oktaman/shared';
 import { FilePreview } from '../../file-preview';
-import { ModelSelector, AIModel, MODELS } from '../model-selector';
+import { ModelSelector, AIModel, PROVIDER_MODELS, DEFAULT_MODELS } from '../model-selector';
+import { settingsHooks } from '@/lib/hooks/settings-hooks';
 
 const DRAFT_KEY_PREFIX = 'chat-draft';
 
@@ -39,10 +40,15 @@ export const TextPrompt = forwardRef<{ setMessage: (msg: string) => void }, Text
   isStopping,
   textareaRef,
 }, ref) => {
+  const { data: settingsData } = settingsHooks.useSettings();
+  const providerType: ProviderType = settingsData?.provider?.type ?? 'openrouter';
+  const models = PROVIDER_MODELS[providerType];
+  const defaults = DEFAULT_MODELS[providerType];
+
   const [message, setMessage] = useState('');
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [selectedModel, setSelectedModel] = useState<AIModel>(
-    MODELS.find(m => m.id === 'moonshotai/kimi-k2.5') || MODELS[0]
+    models.find(m => m.id === defaults.chat) || models[0]
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sessionId = session?.id ?? null;
@@ -74,15 +80,14 @@ export const TextPrompt = forwardRef<{ setMessage: (msg: string) => void }, Text
     }
 
     if (session?.modelId) {
-      const savedModel = MODELS.find(m => m.id === session.modelId);
+      const savedModel = models.find(m => m.id === session.modelId);
       if (savedModel) {
         setSelectedModel(savedModel);
       }
     } else {
-      // Fallback to Kimi model if no preference is set
-      setSelectedModel(MODELS.find(m => m.id === 'moonshotai/kimi-k2.5') || MODELS[0]);
+      setSelectedModel(models.find(m => m.id === defaults.chat) || models[0]);
     }
-  }, [sessionId, session?.modelId]);
+  }, [sessionId, session?.modelId, models, defaults.chat]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
@@ -264,6 +269,7 @@ export const TextPrompt = forwardRef<{ setMessage: (msg: string) => void }, Text
                     selectedModel={selectedModel}
                     onModelChange={handleModelChange}
                     disabled={!!session}
+                    models={models}
                   />
                   <label
                     htmlFor="chat-file-upload"
