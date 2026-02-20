@@ -37,6 +37,11 @@ export const SettingsEntitySchema = new EntitySchema<Settings>({
             nullable: false,
             default: '[]'
         },
+        pairingCode: {
+            type: 'simple-json',
+            nullable: true,
+            default: null,
+        },
         setupCompleted: {
             type: Boolean,
             nullable: false,

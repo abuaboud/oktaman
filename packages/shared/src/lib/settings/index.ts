@@ -25,6 +25,14 @@ export const SettingsChannelConfig = z.object({
 
 export type SettingsChannelConfig = z.infer<typeof SettingsChannelConfig>
 
+export const PairingCode = z.object({
+    code: z.string(),
+    channelId: z.string(),
+    expiresAt: z.string(),
+}).nullable()
+
+export type PairingCode = z.infer<typeof PairingCode>
+
 // Main Settings entity (singleton pattern)
 export const Settings = BaseModelSchema.extend({
     // LLM Configuration
@@ -39,6 +47,9 @@ export const Settings = BaseModelSchema.extend({
 
     // Channels Configuration
     channels: z.array(SettingsChannelConfig).default([]),
+
+    // Pairing Code
+    pairingCode: PairingCode.default(null),
 
     // Onboarding State
     setupCompleted: z.boolean().default(false),

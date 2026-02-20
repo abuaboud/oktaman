@@ -1,5 +1,5 @@
 import { Bot, Context, InputFile } from 'grammy';
-import { ConversationFile, conversationUtils, SessionSource, SettingsChannelConfig, OktaManError, OktaManErrorCode } from '@oktaman/shared';
+import { ConversationFile, conversationUtils, SessionSource, SettingsChannelConfig, OktaManError, OktaManErrorCode, tryCatch } from '@oktaman/shared';
 import { channelService } from './channel.service';
 import { logger } from '../../common/logger';
 import { sessionService } from '../session.service';
@@ -44,25 +44,25 @@ export const telegramChannelHandler = {
         const channels = await channelService.list();
         const telegramChannels = channels.filter(channel => channel.type === 'TELEGRAM');
 
-        const results = await Promise.allSettled(
-            telegramChannels.map(channel => this.initializeBot(channel))
-        );
-
-        const failures = results.filter(r => r.status === 'rejected');
-        if (failures.length > 0) {
-            logger.error({
-                failedCount: failures.length,
-                totalCount: telegramChannels.length,
-                errors: failures.map(f => (f as PromiseRejectedResult).reason)
-            }, '[TelegramHandler] Some bots failed to initialize');
+        // Only initialize the most recent Telegram channel (there should only be one)
+        const latestTelegramChannel = telegramChannels[0];
+        if (!latestTelegramChannel) {
+            logger.info('[TelegramHandler] No Telegram channels found');
+            return;
         }
 
-        const successCount = results.filter(r => r.status === 'fulfilled').length;
+        const [error] = await tryCatch(this.initializeBot(latestTelegramChannel));
+        if (error) {
+            logger.error({
+                channelId: latestTelegramChannel.id,
+                error: inspect(error),
+            }, '[TelegramHandler] Failed to initialize Telegram bot');
+            return;
+        }
+
         logger.info({
-            count: successCount,
-            total: channels.length,
-            failed: failures.length
-        }, '[TelegramHandler] Initialized Telegram bots from database');
+            channelId: latestTelegramChannel.id,
+        }, '[TelegramHandler] Initialized Telegram bot from database');
     },
     async initializeBot(channel: SettingsChannelConfig): Promise<void> {
         logger.info({ channelId: channel.id }, '[TelegramHandler] Initializing bot');
@@ -376,7 +376,7 @@ async function enforcePairing({ channelId, chatId, messageText, bot }: EnforcePa
         return { authorized: true };
     }
 
-    if (attemptPairingByCode({ code: messageText, channel: freshChannel })) {
+    if (await attemptPairingByCode({ code: messageText, channel: freshChannel })) {
         await channelService.setPairedChat({ channelId: freshChannel.id, chatId });
         if (bot) {
             await bot.api.sendMessage(chatId, 'Successfully paired! You can now chat with the AI agent.');
@@ -390,8 +390,8 @@ async function enforcePairing({ channelId, chatId, messageText, bot }: EnforcePa
     return { authorized: false };
 }
 
-function attemptPairingByCode({ code, channel }: AttemptPairingParams): boolean {
-    const result = telegramPairing.validateCode(code);
+async function attemptPairingByCode({ code, channel }: AttemptPairingParams): Promise<boolean> {
+    const result = await telegramPairing.validateCode(code);
     return result !== null && result.channelId === channel.id;
 }
 

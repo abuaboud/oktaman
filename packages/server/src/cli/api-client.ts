@@ -79,13 +79,13 @@ export function completeSetup(): Promise<Settings> {
     return request<Settings>('POST', '/api/v1/settings/complete')
 }
 
-type ProviderConfig = {
+export type ProviderConfig = {
     type: string
     apiKey?: string
     baseUrl?: string
 }
 
-type SettingsChannelConfig = {
+export type SettingsChannelConfig = {
     id: string
     name: string
     type: string
@@ -95,7 +95,7 @@ type SettingsChannelConfig = {
     updated: string
 }
 
-type Settings = {
+export type Settings = {
     id: string
     provider: ProviderConfig | null
     defaultModelId: string
@@ -107,25 +107,25 @@ type Settings = {
     setupCompleted: boolean
 }
 
-type UpdateLlmSettingsRequest = {
+export type UpdateLlmSettingsRequest = {
     provider?: ProviderConfig
     defaultModelId?: string
     embeddingModelId?: string
 }
 
-type UpdateToolsSettingsRequest = {
+export type UpdateToolsSettingsRequest = {
     composioApiKey?: string
     composioWebhookSecret?: string
     firecrawlApiKey?: string
 }
 
-type AddChannelRequest = {
+export type AddChannelRequest = {
     name: string
     type: string
     config: Record<string, unknown>
 }
 
-type PairingCodeResponse = {
+export type PairingCodeResponse = {
     code: string
     expiresAt: string
 }

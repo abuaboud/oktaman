@@ -30,6 +30,13 @@ export const channelController: FastifyPluginAsyncZod = async (app) => {
     if (request.body.type === ChannelType.TELEGRAM) {
       const config = request.body.config as Record<string, unknown>;
       await telegramChannelHandler.verifyBotToken(config.botToken as string);
+
+      // Stop any existing Telegram bot before replacing
+      const existingChannels = await channelService.list();
+      for (const existing of existingChannels.filter(c => c.type === 'TELEGRAM')) {
+        const existingConfig = existing.config as Record<string, unknown>;
+        await telegramChannelHandler.stopBot(existingConfig.botToken as string);
+      }
     }
 
     const settings = await settingsService.addChannel(request.body);
@@ -46,7 +53,7 @@ export const channelController: FastifyPluginAsyncZod = async (app) => {
   // Generate pairing code
   app.post('/:channelId/pairing-code', PairingCodeConfig, async (request) => {
     await channelService.getOrThrow({ channelId: request.params.channelId });
-    const result = telegramPairing.createCode(request.params.channelId);
+    const result = await telegramPairing.createCode(request.params.channelId);
     return result;
   });
 

@@ -22,6 +22,7 @@ async function getOrCreate(): Promise<Settings> {
             composioWebhookSecret: null,
             firecrawlApiKey: null,
             channels: [],
+            pairingCode: null,
             setupCompleted: false,
         });
 
@@ -76,7 +77,8 @@ async function addChannel(request: AddSettingsChannelRequest): Promise<Settings>
         updated: new Date().toISOString(),
     };
 
-    settings.channels = [...settings.channels, newChannel];
+    // Replace existing channels of the same type (e.g., only one Telegram bot allowed)
+    settings.channels = [...settings.channels.filter(c => c.type !== request.type), newChannel];
 
     await settingsRepository().save(settings);
     return settings;
@@ -174,8 +176,13 @@ async function completeSetup(): Promise<Settings> {
     return settings;
 }
 
+async function save(settings: Settings): Promise<Settings> {
+    return await settingsRepository().save(settings);
+}
+
 export const settingsService = {
     getOrCreate,
+    save,
     updateLlmSettings,
     updateToolsSettings,
     addChannel,

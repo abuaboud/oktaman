@@ -1,58 +1,52 @@
 import { randomBytes } from 'crypto';
+import { settingsService } from '../../settings/settings.service';
 
-const EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
-const SAFE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars (0, O, 1, I)
-
-const activeCodes = new Map<string, PairingCode>();
+const EXPIRY_MS = 15 * 60 * 1000; // 15 minutes
 
 function generateCode(): string {
-    const bytes = randomBytes(6);
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-        code += SAFE_CHARS[bytes[i] % SAFE_CHARS.length];
-    }
-    return code;
+    const bytes = randomBytes(3);
+    // 6-digit numeric code (e.g. 482937)
+    const num = ((bytes[0] << 16) | (bytes[1] << 8) | bytes[2]) % 900000 + 100000;
+    return num.toString();
+}
+
+function isExpired(expiresAt: string): boolean {
+    return new Date().toISOString() > expiresAt;
 }
 
 export const telegramPairing = {
-    createCode(channelId: string): PairingCodeResult {
-        // Remove any existing code for this channel
-        for (const [code, entry] of activeCodes.entries()) {
-            if (entry.channelId === channelId) {
-                activeCodes.delete(code);
-            }
-        }
+    async createCode(channelId: string): Promise<PairingCodeResult> {
+        const settings = await settingsService.getOrCreate();
 
         const code = generateCode();
-        const expiresAt = new Date(Date.now() + EXPIRY_MS);
+        const expiresAt = new Date(Date.now() + EXPIRY_MS).toISOString();
 
-        activeCodes.set(code, { channelId, expiresAt });
+        settings.pairingCode = { code, channelId, expiresAt };
+        await settingsService.save(settings);
 
-        return { code, expiresAt: expiresAt.toISOString() };
+        return { code, expiresAt };
     },
 
-    validateCode(code: string): ValidateCodeResult | null {
-        const upper = code.trim().toUpperCase();
-        const entry = activeCodes.get(upper);
+    async validateCode(code: string): Promise<ValidateCodeResult | null> {
+        const trimmed = code.trim();
+        const settings = await settingsService.getOrCreate();
 
-        if (!entry) {
-            return null;
-        }
-
-        if (new Date() > entry.expiresAt) {
-            activeCodes.delete(upper);
+        const entry = settings.pairingCode;
+        if (!entry || isExpired(entry.expiresAt) || entry.code !== trimmed) {
+            // Clear expired code
+            if (entry && isExpired(entry.expiresAt)) {
+                settings.pairingCode = null;
+                await settingsService.save(settings);
+            }
             return null;
         }
 
         // Consume the code (one-time use)
-        activeCodes.delete(upper);
+        settings.pairingCode = null;
+        await settingsService.save(settings);
+
         return { channelId: entry.channelId };
     },
-};
-
-type PairingCode = {
-    channelId: string;
-    expiresAt: Date;
 };
 
 type PairingCodeResult = {
