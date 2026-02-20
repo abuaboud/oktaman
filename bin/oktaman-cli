@@ -294,7 +294,7 @@ cmd_setup() {
   require_installed
   show_banner
   OKTAMAN_PORT="$PORT" \
-  exec "$OKTAMAN_HOME/bin/node" "$OKTAMAN_HOME/app/packages/server/dist/cli/setup.js"
+  exec "$OKTAMAN_HOME/bin/node" "$OKTAMAN_HOME/app/packages/server/dist/cli/setup-entry.js"
 }
 
 cmd_run() {

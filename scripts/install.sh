@@ -112,13 +112,8 @@ check_existing() {
   if [ -f "$OKTAMAN_HOME/version" ]; then
     CURRENT="$(cat "$OKTAMAN_HOME/version")"
     if [ "$CURRENT" = "$VERSION" ]; then
-      log_warn "OktaMan $VERSION is already installed."
-      printf "Reinstall? [y/N] "
-      read -r answer
-      case "$answer" in
-        [yY]|[yY][eE][sS]) ;;
-        *) log_info "Cancelled."; exit 0 ;;
-      esac
+      log_ok "OktaMan $VERSION is already the latest version."
+      exit 0
     else
       log_info "Upgrading from $CURRENT to $VERSION"
     fi
