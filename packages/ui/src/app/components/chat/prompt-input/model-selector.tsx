@@ -7,117 +7,45 @@ import {
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ProviderType } from '@oktaman/shared';
+import {
+  ProviderType,
+  PROVIDER_MODELS as SHARED_PROVIDER_MODELS,
+  PROVIDER_EMBEDDING_MODELS as SHARED_PROVIDER_EMBEDDING_MODELS,
+  DEFAULT_MODELS,
+  AIModel as SharedAIModel,
+} from '@oktaman/shared';
+
+const LOGO_MAP: Record<string, string> = {
+  anthropic: 'https://models.dev/logos/anthropic.svg',
+  google: 'https://models.dev/logos/google.svg',
+  qwen: 'https://models.dev/logos/qwen.svg',
+  moonshotai: 'https://models.dev/logos/moonshotai.svg',
+  minimax: 'https://models.dev/logos/minimax.svg',
+  openai: 'https://models.dev/logos/openai.svg',
+  ollama: 'https://models.dev/logos/moonshotai.svg',
+  meta: 'https://models.dev/logos/meta.svg',
+};
+
+function addLogo(model: SharedAIModel): AIModel {
+  return { ...model, logo: LOGO_MAP[model.provider] ?? '' };
+}
+
+function addLogos(models: SharedAIModel[]): AIModel[] {
+  return models.map(addLogo);
+}
 
 const PROVIDER_MODELS: Record<ProviderType, AIModel[]> = {
-  openrouter: [
-    {
-      id: 'anthropic/claude-sonnet-4.6',
-      name: 'Claude Sonnet 4.6',
-      provider: 'anthropic',
-      logo: 'https://models.dev/logos/anthropic.svg',
-    },
-    {
-      id: 'google/gemini-3.1-pro-preview',
-      name: 'Gemini 3.1 Pro',
-      provider: 'google',
-      logo: 'https://models.dev/logos/google.svg',
-    },
-    {
-      id: 'qwen/qwen3.5-plus-02-15',
-      name: 'Qwen 3.5 Plus',
-      provider: 'qwen',
-      logo: 'https://models.dev/logos/qwen.svg',
-    },
-    {
-      id: 'moonshotai/kimi-k2.5',
-      name: 'Kimi K2.5',
-      provider: 'moonshotai',
-      logo: 'https://models.dev/logos/moonshotai.svg',
-    },
-    {
-      id: 'minimax/minimax-m2.5',
-      name: 'MiniMax M2.5',
-      provider: 'minimax',
-      logo: 'https://models.dev/logos/minimax.svg',
-    },
-  ],
-  openai: [
-    {
-      id: 'gpt-5.2',
-      name: 'GPT-5.2',
-      provider: 'openai',
-      logo: 'https://models.dev/logos/openai.svg',
-    },
-  ],
-  ollama: [
-    {
-      id: 'kimi-k2.5:cloud',
-      name: 'Kimi K2.5',
-      provider: 'ollama',
-      logo: 'https://models.dev/logos/moonshotai.svg',
-    },
-    {
-      id: 'minimax-m2.5:cloud',
-      name: 'MiniMax M2.5',
-      provider: 'ollama',
-      logo: 'https://models.dev/logos/minimax.svg',
-    },
-  ],
+  openrouter: addLogos(SHARED_PROVIDER_MODELS.openrouter),
+  openai: addLogos(SHARED_PROVIDER_MODELS.openai),
+  ollama: addLogos(SHARED_PROVIDER_MODELS.ollama),
 };
 
 const PROVIDER_EMBEDDING_MODELS: Record<ProviderType, AIModel[]> = {
-  openrouter: [
-    {
-      id: 'openai/text-embedding-3-small',
-      name: 'Embedding 3 Small',
-      provider: 'openai',
-      logo: 'https://models.dev/logos/openai.svg',
-    },
-    {
-      id: 'openai/text-embedding-3-large',
-      name: 'Embedding 3 Large',
-      provider: 'openai',
-      logo: 'https://models.dev/logos/openai.svg',
-    },
-  ],
-  openai: [
-    {
-      id: 'text-embedding-3-small',
-      name: 'Embedding 3 Small',
-      provider: 'openai',
-      logo: 'https://models.dev/logos/openai.svg',
-    },
-    {
-      id: 'text-embedding-3-large',
-      name: 'Embedding 3 Large',
-      provider: 'openai',
-      logo: 'https://models.dev/logos/openai.svg',
-    },
-  ],
-  ollama: [
-    {
-      id: 'nomic-embed-text',
-      name: 'Nomic Embed Text',
-      provider: 'ollama',
-      logo: 'https://models.dev/logos/meta.svg',
-    },
-  ],
-};
-
-const DEFAULT_MODELS: Record<ProviderType, { chat: string; embedding: string }> = {
-  openrouter: {
-    chat: 'moonshotai/kimi-k2.5',
-    embedding: 'openai/text-embedding-3-small',
-  },
-  openai: {
-    chat: 'gpt-5.2',
-    embedding: 'text-embedding-3-small',
-  },
-  ollama: {
-    chat: 'kimi-k2.5:cloud',
-    embedding: 'nomic-embed-text',
-  },
+  openrouter: addLogos(SHARED_PROVIDER_EMBEDDING_MODELS.openrouter),
+  openai: addLogos(SHARED_PROVIDER_EMBEDDING_MODELS.openai),
+  ollama: addLogos(SHARED_PROVIDER_EMBEDDING_MODELS.ollama).map(m =>
+    m.provider === 'ollama' ? { ...m, logo: LOGO_MAP['meta'] } : m
+  ),
 };
 
 // Backward-compat exports
@@ -191,10 +119,7 @@ export const ModelSelector = ({ selectedModel, onModelChange, disabled, models, 
 
 export { MODELS, EMBEDDING_MODELS, PROVIDER_MODELS, PROVIDER_EMBEDDING_MODELS, DEFAULT_MODELS, findModelById };
 
-export type AIModel = {
-  id: string;
-  name: string;
-  provider: string;
+export type AIModel = SharedAIModel & {
   logo: string;
 };
 

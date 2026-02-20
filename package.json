@@ -18,6 +18,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "clean": "turbo run clean",
     "test": "turbo run test",
+    "setup": "npm run setup -w packages/server",
     "start": "node bin/oktaman.js"
   },
   "devDependencies": {

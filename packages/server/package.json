@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc && cp -r src/app/brain/prompts dist/app/brain/ && cp -r src/app/brain/tools dist/app/brain/ && cp -r src/app/brain/skills dist/app/brain/ && cp -r src/assets dist/ && find src -name '*.mjs' -exec sh -c 'cp \"$1\" \"dist/${1#src/}\"' _ {} \\;",
     "dev": "tsx watch src/main.ts",
+    "setup": "tsx src/cli/setup.ts",
     "start": "node dist/main.js",
     "lint": "eslint src/",
     "clean": "rm -rf dist",
@@ -15,6 +16,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.25",
+    "@clack/prompts": "^1.0.1",
     "@composio/core": "^0.6.3",
     "@composio/vercel": "^0.6.3",
     "@fastify/cookie": "^11.0.2",

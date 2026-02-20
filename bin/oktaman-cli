@@ -290,6 +290,13 @@ cmd_uninstall() {
   log_info "To remove everything: rm -rf $OKTAMAN_HOME"
 }
 
+cmd_setup() {
+  require_installed
+  show_banner
+  OKTAMAN_PORT="$PORT" \
+  exec "$OKTAMAN_HOME/bin/node" "$OKTAMAN_HOME/app/packages/server/dist/cli/setup.js"
+}
+
 cmd_run() {
   require_installed
   show_banner
@@ -317,6 +324,7 @@ OktaMan — Local AI Assistant
 Usage: oktaman <command>
 
 Commands:
+  setup       Configure AI provider, tools, and channels
   start       Start the OktaMan background service
   stop        Stop the OktaMan background service
   restart     Restart the OktaMan background service
@@ -336,6 +344,7 @@ HELP
 # ---------------------------------------------------------------------------
 
 case "${1:-help}" in
+  setup)     cmd_setup ;;
   start)     cmd_start ;;
   stop)      cmd_stop ;;
   restart)   cmd_restart ;;

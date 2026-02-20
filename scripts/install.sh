@@ -359,7 +359,10 @@ main() {
   printf '  Data:       %s\n' "$OKTAMAN_HOME"
   printf '  CLI:        oktaman help\n'
   printf '\n'
+  printf '  \033[1;33mNext step:\033[0m  Run "oktaman setup" to configure your AI provider.\n'
+  printf '\n'
   printf '  Commands:\n'
+  printf '    oktaman setup       Configure AI provider, tools, and channels\n'
   printf '    oktaman status      Check if OktaMan is running\n'
   printf '    oktaman logs        View recent logs\n'
   printf '    oktaman open        Open in browser\n'
