@@ -9,6 +9,13 @@ Creates an agent trigger that fires when a specific event occurs (e.g., new emai
 - Connecting multiple services with automated actions
 - Processing webhooks from third-party services
 
+## When NOT to Use
+
+- **Never** create an agent for one-off tasks—just do the task directly
+- **Never** create an agent without a valid trigger (e.g., a webhook, schedule, or external event)
+- Agents are **only** for background automation that is recurring or event-driven
+- If the user asks to "do something now", do it immediately—do not create an agent for it
+
 ## Best Practices
 
 - Gather ALL required information before creating (trigger type, configuration, actions)
