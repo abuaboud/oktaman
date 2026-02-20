@@ -1,7 +1,6 @@
 import { Settings, UpdateLlmSettingsRequest, UpdateToolsSettingsRequest, AddSettingsChannelRequest, UpdateSettingsChannelRequest, ValidationResult, SettingsChannelConfig, ProviderConfig, apId, OktaManError, OktaManErrorCode } from '@oktaman/shared';
 import { databaseConnection } from '../database/database-connection';
 import { SettingsEntitySchema } from './settings.entity';
-import { logger } from '../common/logger';
 
 const settingsRepository = () => databaseConnection.getRepository(SettingsEntitySchema);
 
