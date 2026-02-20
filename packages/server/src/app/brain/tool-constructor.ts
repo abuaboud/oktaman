@@ -6,7 +6,6 @@ import { VercelProvider } from '@composio/vercel';
 import { logger } from '../common/logger';
 import { settingsService } from '../settings/settings.service';
 import { createExecuteBashTool } from './tools/execute-bash';
-import { createDisplayAttachmentsTool } from './tools/display-attachments';
 import { createPlanningTools } from './tools/planning';
 import { createAskQuestionTool } from './tools/ask-question';
 import { createAgentTools } from './tools/agent';
@@ -15,7 +14,6 @@ import { createFirecrawlTools } from './tools/firecrawl';
 // Tool Name Enum
 export enum ToolName {
     EXECUTE_BASH = 'execute_bash',
-    DISPLAY_ATTACHMENTS = 'display_attachments',
     ASK_QUESTION = 'ask_question',
     WRITE_TODOS = 'write_todos',
     READ_TODOS = 'read_todos',
@@ -41,7 +39,6 @@ export const excludedToolsBySource: Record<SessionSource, ToolName[]> = {
         ToolName.MEMORY_FORGET,
     ],
     [SessionSource.TELEGRAM]: [
-        ToolName.DISPLAY_ATTACHMENTS,
         ToolName.ASK_QUESTION,
         ToolName.WRITE_TODOS,
         ToolName.READ_TODOS,
@@ -90,11 +87,6 @@ export async function constructTools(config: ToolConstructorConfig): Promise<Con
     // Execute Bash Tool
     if (shouldIncludeTool(ToolName.EXECUTE_BASH)) {
         Object.assign(allTools, createExecuteBashTool(sandbox));
-    }
-
-    // Display Attachments Tool
-    if (shouldIncludeTool(ToolName.DISPLAY_ATTACHMENTS)) {
-        Object.assign(allTools, createDisplayAttachmentsTool(sandbox));
     }
 
     // Ask Question Tool

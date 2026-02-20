@@ -1,4 +1,4 @@
-import { AssistantConversationMessage, CompactionConversationMessage, Conversation, ConversationFile, ToolCallConversationMessage, UserConversationMessage } from "./conversation"
+import { AssistantConversationContent, AssistantConversationMessage, CompactionConversationMessage, Conversation, ConversationFile, ToolCallConversationMessage, UserConversationMessage } from "./conversation"
 import { AgentStreamingUpdateProgressData } from "./dto"
 import { AgentQuestion, AskQuestionInput, ConnectionQuestion, QuestionAnswer, QuestionType } from "./question"
 export const conversationUtils = {
@@ -37,6 +37,33 @@ export const conversationUtils = {
                         message: chunk.part.message,
                         startedAt: chunk.part.startedAt,
                     })
+                }
+
+                // Extract markdown images from the accumulated text
+                const textPartIndex = lastAssistantMessage.parts.length - 1
+                const textPart = lastAssistantMessage.parts[textPartIndex]
+                if (textPart && textPart.type === 'text') {
+                    const splitParts = splitTextWithImages(textPart.message)
+                    const hasImages = splitParts.some(p => p.type === 'assistant-attachment')
+                    if (hasImages) {
+                        const currentTime = chunk.part.startedAt || createTimestamp()
+                        lastAssistantMessage.parts.splice(textPartIndex, 1)
+                        for (const splitPart of splitParts) {
+                            if (splitPart.type === 'text') {
+                                lastAssistantMessage.parts.push({
+                                    ...splitPart,
+                                    startedAt: textPart.startedAt,
+                                    completedAt: textPart.completedAt,
+                                })
+                            } else if (splitPart.type === 'assistant-attachment') {
+                                lastAssistantMessage.parts.push({
+                                    ...splitPart,
+                                    startedAt: currentTime,
+                                    completedAt: currentTime,
+                                })
+                            }
+                        }
+                    }
                 }
             } else if (chunk.part.type === 'thinking-delta') {
                 const lastPart = lastAssistantMessage.parts.length > 0 ? lastAssistantMessage.parts[lastAssistantMessage.parts.length - 1] : null
@@ -257,6 +284,78 @@ interface ComposioToolOutput {
     logId?: string;
 }
 
+export function splitTextWithImages(text: string): AssistantConversationContent[] {
+    const codeBlockRanges = getCodeBlockRanges(text)
+    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g
+    const parts: AssistantConversationContent[] = []
+    let lastIndex = 0
+    let match: RegExpExecArray | null
+
+    while ((match = imageRegex.exec(text)) !== null) {
+        if (isInsideCodeBlock(match.index, codeBlockRanges)) {
+            continue
+        }
+
+        const textBefore = text.slice(lastIndex, match.index)
+        if (textBefore.length > 0) {
+            parts.push({ type: 'text', message: textBefore })
+        }
+
+        parts.push({
+            type: 'assistant-attachment',
+            url: resolveAttachmentUrl(match[2]),
+            altText: match[1] || undefined,
+        })
+
+        lastIndex = match.index + match[0].length
+    }
+
+    const remaining = text.slice(lastIndex)
+    if (remaining.length > 0) {
+        parts.push({ type: 'text', message: remaining })
+    }
+
+    return parts
+}
+
+export function resolveAttachmentUrl(pathOrUrl: string): string {
+    if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://') || pathOrUrl.startsWith('/api/') || pathOrUrl.startsWith('/v1/')) {
+        return pathOrUrl
+    }
+    return `/api/v1/attachments/view?path=${encodeURIComponent(pathOrUrl)}`
+}
+
+function getCodeBlockRanges(text: string): CodeBlockRange[] {
+    const ranges: CodeBlockRange[] = []
+
+    // Fenced code blocks: ``` to matching ``` or end of string (unclosed)
+    const fencedRegex = /```[\s\S]*?(?:```|$)/g
+    let match: RegExpExecArray | null
+    while ((match = fencedRegex.exec(text)) !== null) {
+        ranges.push({ start: match.index, end: match.index + match[0].length })
+    }
+
+    // Inline code: ` to ` (not across newlines, not inside fenced blocks)
+    const inlineRegex = /`[^`\n]+`/g
+    while ((match = inlineRegex.exec(text)) !== null) {
+        if (!isInsideCodeBlock(match.index, ranges)) {
+            ranges.push({ start: match.index, end: match.index + match[0].length })
+        }
+    }
+
+    return ranges
+}
+
+function isInsideCodeBlock(position: number, ranges: CodeBlockRange[]): boolean {
+    return ranges.some(range => position >= range.start && position < range.end)
+}
+
 function createTimestamp(): string {
     return new Date().toISOString();
 }
+
+type CodeBlockRange = {
+    start: number;
+    end: number;
+}
+

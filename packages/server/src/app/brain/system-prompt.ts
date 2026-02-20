@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { Session, isNil } from '@oktaman/shared';
 import { skillsLoader, buildSkillsPrompt } from './skills';
 import { loadPromptFiles } from './prompts/prompt-loader';
@@ -8,7 +8,6 @@ import { WORKING_DIR } from '../common/system';
 
 const TOOL_PROMPTS: Record<string, string> = {
     [ToolName.EXECUTE_BASH]: loadPrompt('./tools/execute-bash/tool.md'),
-    [ToolName.DISPLAY_ATTACHMENTS]: loadPrompt('./tools/display-attachments/tool.md'),
     [ToolName.ASK_QUESTION]: loadPrompt('./tools/ask-question/tool.md'),
     [ToolName.CREATE_AGENT]: loadPrompt('./tools/agent/tool.md'),
     [ToolName.LIST_COMPOSIO_TRIGGERS]: loadPrompt('./tools/agent/composio-tool.md'),
@@ -56,6 +55,9 @@ export async function buildMainSystemPrompt(options: MainSystemPromptOptions): P
     const userPath = join(WORKING_DIR, 'USER.MD');
     const agentPath = join(WORKING_DIR, 'AGENT.MD');
 
+    const attachmentsDir = resolve(WORKING_DIR, 'attachments');
+    const agentPrompt = injectTemplate(promptFiles.agent, { attachmentsDir });
+
     return `
 ${promptFiles.soul}
 (Editable at ${soulPath})
@@ -65,7 +67,7 @@ ${locationPrompt}
 ${promptFiles.user}
 (Editable at ${userPath})
 
-${promptFiles.agent}
+${agentPrompt}
 (Editable at ${agentPath})
 
 ${agentContextPrompt}

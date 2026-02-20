@@ -1,5 +1,5 @@
 import { Bot, Context, InputFile } from 'grammy';
-import { Channel, ConversationFile, conversationUtils, isNil, SessionSource, OktaManError, OktaManErrorCode } from '@oktaman/shared';
+import { Channel, ConversationFile, conversationUtils, SessionSource, OktaManError, OktaManErrorCode } from '@oktaman/shared';
 import { channelService } from './channel.service';
 import { logger } from '../../common/logger';
 import { sessionService } from '../session.service';
@@ -232,21 +232,38 @@ async function handleMessage(ctx: Context, channel: Channel): Promise<void> {
         await sessionManager.enqueueChatProcessing({
             sessionId: session.id,
             sessionSource: SessionSource.TELEGRAM,
-            onMessage: async (message) => {
-                if (!isNil(message) && message.length > 0) {
-                    if (!bot) {
-                        logger.warn({ chatId, channelId: channel.id }, '[TelegramHandler] Bot not available for sending message');
-                        return;
-                    }
+            onMessage: async (parts) => {
+                if (!bot) {
+                    logger.warn({ chatId, channelId: channel.id }, '[TelegramHandler] Bot not available for sending message');
+                    return;
+                }
 
-                    const telegramMessage = telegramifyMarkdown(message, 'remove');
-                    if (telegramMessage.trim().length === 0) {
-                        return;
+                for (const part of parts) {
+                    if (part.type === 'text') {
+                        if (part.message.trim().length === 0) {
+                            continue;
+                        }
+                        const telegramMessage = telegramifyMarkdown(part.message, 'remove');
+                        if (telegramMessage.trim().length === 0) {
+                            continue;
+                        }
+                        await bot.api.sendMessage(chatId, telegramMessage, {
+                            parse_mode: 'MarkdownV2',
+                        });
+                    } else if (part.type === 'assistant-attachment') {
+                        try {
+                            const photoSource = resolvePhotoSource(part.url);
+                            await bot.api.sendPhoto(chatId, photoSource, {
+                                caption: part.altText || undefined,
+                            });
+                        } catch (photoError) {
+                            logger.warn({ chatId, url: part.url, error: inspect(photoError) }, '[TelegramHandler] Failed to send photo, falling back to text link');
+                            const fallback = part.altText
+                                ? `[${part.altText}](${part.url})`
+                                : part.url;
+                            await bot.api.sendMessage(chatId, fallback);
+                        }
                     }
-
-                    await bot.api.sendMessage(chatId, telegramMessage, {
-                        parse_mode: 'MarkdownV2',
-                    });
                 }
             },
         });
@@ -318,6 +335,18 @@ async function processPhotos(
         type: mimeType,
         url: dataUrl,
     }];
+}
+
+function resolvePhotoSource(url: string): string | InputFile {
+    const ATTACHMENT_VIEW_PREFIX = '/api/v1/attachments/view?path='
+    if (url.startsWith(ATTACHMENT_VIEW_PREFIX)) {
+        const localPath = decodeURIComponent(url.slice(ATTACHMENT_VIEW_PREFIX.length))
+        return new InputFile(localPath)
+    }
+    if (url.startsWith('/api/') || url.startsWith('/v1/')) {
+        return `${API_BASE_URL}${url}`
+    }
+    return url
 }
 
 type TelegramPhotoSize = {

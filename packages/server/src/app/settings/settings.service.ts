@@ -19,7 +19,7 @@ async function getOrCreate(): Promise<Settings> {
         settings = settingsRepository().create({
             id: SINGLETON_ID,
             openRouterApiKey: null,
-            defaultModelId: 'anthropic/claude-3.5-sonnet',
+            defaultModelId: 'moonshotai/kimi-k2.5',
             embeddingModelId: 'openai/text-embedding-3-small',
             agentModelId: 'moonshotai/kimi-k2.5',
             composioApiKey: null,

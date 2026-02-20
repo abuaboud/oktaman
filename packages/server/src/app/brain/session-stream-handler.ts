@@ -21,11 +21,12 @@ export const sessionStreamHandler = {
                 // Update the conversation with the streaming chunk
                 let currentNumberOfParts = newConversation.length;
                 newConversation = conversationUtils.streamChunk(newConversation, update.data);
+
                 let newNumberOfParts = newConversation.length;
 
                 // Only persist to database for significant updates (tool-call completions or new parts)
                 if (newNumberOfParts > currentNumberOfParts || update.data.part?.type === 'tool-call') {
-      
+
                     updatedSession = await sessionService.update({
                         id: session.id,
                         conversation: newConversation,

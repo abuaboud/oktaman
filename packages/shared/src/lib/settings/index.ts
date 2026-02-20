@@ -18,7 +18,7 @@ export type SettingsChannelConfig = z.infer<typeof SettingsChannelConfig>
 export const Settings = BaseModelSchema.extend({
     // LLM Configuration
     openRouterApiKey: z.string().nullable(),
-    defaultModelId: z.string().default('anthropic/claude-3.5-sonnet'),
+    defaultModelId: z.string().default('moonshotai/kimi-k2.5'),
     embeddingModelId: z.string().default('openai/text-embedding-3-small'),
     agentModelId: z.string().default('moonshotai/kimi-k2.5'),
 

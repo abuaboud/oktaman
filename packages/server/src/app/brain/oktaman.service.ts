@@ -1,4 +1,4 @@
-import { AgentSessionStatus, AgentStreamingEvent, AgentStreamingUpdate, AgentStreamingUpdateProgressData, ConversationMessage, isNil, Session, mutexLock, SessionSource } from "@oktaman/shared";
+import { AgentSessionStatus, AgentStreamingEvent, AgentStreamingUpdate, AgentStreamingUpdateProgressData, AssistantConversationContent, ConversationMessage, isNil, Session, mutexLock, splitTextWithImages } from "@oktaman/shared";
 import { LanguageModelUsage, ModelMessage, ReasoningOutput, TextPart, ToolCallPart, ToolLoopAgent, ToolResultPart } from "ai";
 import { createOpenRouter, OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider";
 import { inspect } from "util";
@@ -14,14 +14,14 @@ import { createStopCondition } from "./stop-condition";
 import { constructTools } from "./tool-constructor";
 
 export const oktamanService = {
-    chatWithOktaMan: async (session: Session, abortSignal?: AbortSignal, onMessage?: (message: string) => void) => {
+    chatWithOktaMan: async (session: Session, abortSignal?: AbortSignal, onMessage?: (parts: AssistantConversationContent[]) => void) => {
         return mutexLock.runExclusive(session.id, async () => {
             return executeChatWithOktaMan(session, abortSignal, onMessage);
         });
     }
 };
 
-async function executeChatWithOktaMan(session: Session, abortSignal?: AbortSignal, onMessage?: (message: string) => void) {
+async function executeChatWithOktaMan(session: Session, abortSignal?: AbortSignal, onMessage?: (parts: AssistantConversationContent[]) => void) {
 
     const sandbox = await sandboxManager.getOrCreate(session.id);
 
@@ -72,7 +72,10 @@ async function executeChatWithOktaMan(session: Session, abortSignal?: AbortSigna
             onStepFinish: async (content) => {
                 lastStepUsage = content.usage;
                 if (content.text.length > 0) {
-                    onMessage?.(content.text);
+                    const parts = splitTextWithImages(content.text);
+                    if (parts.length > 0) {
+                        onMessage?.(parts);
+                    }
                 }
             },
             providerOptions: {
@@ -129,7 +132,8 @@ async function executeChatWithOktaMan(session: Session, abortSignal?: AbortSigna
                                     startedAt: new Date().toISOString(),
                                 },
                             },
-                        }, session
+                        },
+                        session,
                     });
                     break
                 }
@@ -404,6 +408,15 @@ function convertHistory(conversation: ConversationMessage[]): ModelMessage[] {
                                 textParts.push(textPart)
                             }
                             break
+                        case 'assistant-attachment': {
+                            const alt = item.altText || '';
+                            const textPart: TextPart = {
+                                type: 'text' as const,
+                                text: `![${alt}](${item.url})`,
+                            }
+                            textParts.push(textPart)
+                            break
+                        }
                         case 'tool-call':
                             // Only include completed tool calls with valid input
                             if (item.status === 'completed' && item.input !== undefined) {

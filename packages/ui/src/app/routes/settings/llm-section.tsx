@@ -36,7 +36,7 @@ export function LlmSection({ settings }: LlmSectionProps) {
 
   const selectedDefaultModel = findModelById(defaultModelId, MODELS) ?? MODELS[0];
   const selectedEmbeddingModel = findModelById(embeddingModelId, EMBEDDING_MODELS) ?? EMBEDDING_MODELS[0];
-  const selectedAgentModel = findModelById(agentModelId, MODELS) ?? MODELS[0];
+  const selectedAgentModel = findModelById(agentModelId, MODELS) ?? findModelById('moonshotai/kimi-k2.5', MODELS) ?? MODELS[0];
 
   return (
     <Card className="border-2">

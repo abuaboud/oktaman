@@ -65,6 +65,14 @@ export const ThinkingConversationMessage = z.object({
 })
 export type ThinkingConversationMessage = z.infer<typeof ThinkingConversationMessage>;
 
+export const AssistantAttachmentConversationMessage = z.object({
+  type: z.literal('assistant-attachment'),
+  url: z.string(),
+  altText: z.string().optional(),
+  startedAt: z.string().optional(),
+  completedAt: z.string().optional(),
+})
+export type AssistantAttachmentConversationMessage = z.infer<typeof AssistantAttachmentConversationMessage>;
 
 export const ToolCallConversationMessage = z.object({
   type: z.literal('tool-call'),
@@ -82,6 +90,7 @@ export type ToolCallConversationMessage = z.infer<typeof ToolCallConversationMes
 export const AssistantConversationContent = z.union([
   TextConversationMessage,
   ThinkingConversationMessage,
+  AssistantAttachmentConversationMessage,
   ToolCallConversationMessage,
 ])
 export type AssistantConversationContent = z.infer<typeof AssistantConversationContent>;

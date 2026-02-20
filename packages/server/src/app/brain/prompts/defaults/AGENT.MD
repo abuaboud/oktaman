@@ -22,3 +22,13 @@ You can read or edit these files directly using the bash tool.
 - Always use native tools for authentication instead of composio whenever possible. Only prompt for credentials if there's no easy native workaround.
 - Base decisions on verified information.
 
+## File Attachments
+
+**CRITICAL:** When you generate files (images, charts, PDFs, etc.) that should be displayed to the user, you **MUST** save them inside `{{attachmentsDir}}`. Files saved outside this directory will NOT be accessible and will fail to display. Create the directory if it doesn't exist.
+
+Reference them using standard markdown image syntax with the **full absolute path**:
+
+```
+![description]({{attachmentsDir}}/chart.png)
+```
+

@@ -2,6 +2,7 @@ import { cn, hashString, formatDuration } from '@/lib/utils';
 
 import { ToolCallMessage } from './tool-call-message';
 import { AssistantConversationMessage } from '@oktaman/shared';
+import { AssistantAttachmentBlock } from './attachment-preview';
 import { Markdown } from '@/components/custom/markdown';
 import { CopyToClipboardButton } from '@/components/custom/copy-to-clipboard-button';
 import { Clock } from 'lucide-react';
@@ -51,7 +52,7 @@ export function LLMMessage({
     let lastComplete: string | null = null;
 
     for (const part of message.parts) {
-      if (part.type === 'text' || part.type === 'thinking' || part.type === 'tool-call') {
+      if (part.type === 'text' || part.type === 'thinking' || part.type === 'tool-call' || part.type === 'assistant-attachment') {
         if (part.startedAt && !firstStart) {
           firstStart = part.startedAt;
         }
@@ -105,6 +106,15 @@ export function LLMMessage({
               >
                 {part.message}
               </ThinkingBlock>
+            );
+          }
+          if (part.type === 'assistant-attachment') {
+            const key = hashString(part.url + index);
+            return (
+              <AssistantAttachmentBlock
+                key={key}
+                message={part}
+              />
             );
           }
           if (part.type === 'tool-call') {

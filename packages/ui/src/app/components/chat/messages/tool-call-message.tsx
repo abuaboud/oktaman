@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { cn, formatDuration } from '@/lib/utils';
 import { Agent, ToolCallConversationMessage } from '@oktaman/shared';
-import { DISPLAY_ATTACHMENTS_TOOL_NAME, DisplayAttachmentsMessage } from './attachment-preview';
 import { AgentCard } from './agent-card';
 import { TodoListDisplay } from './todo-list-display';
 
@@ -233,11 +232,6 @@ export function ToolCallMessage({
   className,
   isStopped = false,
 }: ToolCallMessageProps) {
-  // Handle display_attachments tool specially - show as actual attachments
-  if (message.toolName === DISPLAY_ATTACHMENTS_TOOL_NAME) {
-    return <DisplayAttachmentsMessage message={message} className={className} />;
-  }
-
   const [isExpanded, setIsExpanded] = useState(false);
   const toolConfig = TOOL_CONFIGS[message.toolName];
 

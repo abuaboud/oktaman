@@ -27,7 +27,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { SidebarProfile } from "./sidebar-profile"
 import { NavAgents } from "./nav-agents"
 import { useTheme } from "./theme-provider"
 
@@ -44,7 +43,8 @@ export function AppSidebar({
   const sessionsIconRef = useRef<MessageSquareIconHandle>(null);
 
   const isSessionsActive = location.pathname.includes("/sessions");
-  const isNewChatActive = !isSessionsActive && location.pathname === "/";
+  const isSettingsActive = location.pathname.includes("/settings");
+  const isNewChatActive = !isSessionsActive && !isSettingsActive && location.pathname === "/";
 
   const handleNewChat = () => {
     navigate("/")
@@ -80,10 +80,6 @@ export function AppSidebar({
                 side={isMobile ? "bottom" : "right"}
                 sideOffset={4}
               >
-                <DropdownMenuItem onClick={() => navigate("/settings")}>
-                  <Settings className="size-4" />
-                  Settings
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/connections")}>
                   <PlugZapIcon size={16} className="size-4" />
                   Connections
@@ -153,7 +149,19 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter>
-        <SidebarProfile />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="Settings"
+              onClick={() => navigate("/settings")}
+              isActive={isSettingsActive}
+              className="px-2.5 md:px-2"
+            >
+              <Settings className="size-4" />
+              <span>Settings</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   )

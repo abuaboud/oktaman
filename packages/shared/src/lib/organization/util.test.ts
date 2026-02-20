@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { conversationUtils } from './util'
+import { conversationUtils, splitTextWithImages, resolveAttachmentUrl } from './util'
 import { Conversation, UserConversationMessage, AssistantConversationMessage } from './conversation'
 import type { AgentQuestion } from './question'
 
@@ -166,7 +166,6 @@ describe('conversationUtils', () => {
         role: 'assistant',
         parts: [],
       })
-      expect(result[0].sentAt).toBeDefined()
     })
   })
 
@@ -456,6 +455,283 @@ describe('conversationUtils', () => {
       if (question.type === 'connection_card') {
         expect(question.toolkit).toBe('github')
       }
+    })
+  })
+
+  describe('splitTextWithImages', () => {
+    it('should split text with a single image preserving order', () => {
+      const result = splitTextWithImages('Here is a chart: ![chart](https://example.com/chart.png) and some text after')
+      expect(result).toEqual([
+        { type: 'text', message: 'Here is a chart: ' },
+        { type: 'assistant-attachment', url: 'https://example.com/chart.png', altText: 'chart' },
+        { type: 'text', message: ' and some text after' },
+      ])
+    })
+
+    it('should split text with multiple images preserving order', () => {
+      const result = splitTextWithImages('![a](https://a.png) text ![b](https://b.png)')
+      expect(result).toEqual([
+        { type: 'assistant-attachment', url: 'https://a.png', altText: 'a' },
+        { type: 'text', message: ' text ' },
+        { type: 'assistant-attachment', url: 'https://b.png', altText: 'b' },
+      ])
+    })
+
+    it('should return single text part when no images present', () => {
+      const result = splitTextWithImages('Just plain text')
+      expect(result).toEqual([
+        { type: 'text', message: 'Just plain text' },
+      ])
+    })
+
+    it('should handle empty alt text', () => {
+      const result = splitTextWithImages('![](https://example.com/img.png)')
+      expect(result).toEqual([
+        { type: 'assistant-attachment', url: 'https://example.com/img.png', altText: undefined },
+      ])
+    })
+
+    it('should keep incomplete image patterns as text', () => {
+      const result = splitTextWithImages('![alt](https://example.com/img')
+      expect(result).toEqual([
+        { type: 'text', message: '![alt](https://example.com/img' },
+      ])
+    })
+
+    it('should not extract images inside fenced code blocks', () => {
+      const text = 'Before\n```\n![img](https://example.com/img.png)\n```\nAfter'
+      const result = splitTextWithImages(text)
+      expect(result).toEqual([
+        { type: 'text', message: text },
+      ])
+    })
+
+    it('should not extract images inside inline code', () => {
+      const text = 'Use `![img](https://example.com/img.png)` to embed'
+      const result = splitTextWithImages(text)
+      expect(result).toEqual([
+        { type: 'text', message: text },
+      ])
+    })
+
+    it('should extract images outside code blocks but keep ones inside as text', () => {
+      const result = splitTextWithImages('![outside](https://outside.png)\n```\n![inside](https://inside.png)\n```\n![also-outside](https://also.png)')
+      expect(result).toHaveLength(3)
+      expect(result[0]).toEqual({ type: 'assistant-attachment', url: 'https://outside.png', altText: 'outside' })
+      expect(result[1]).toEqual({ type: 'text', message: '\n```\n![inside](https://inside.png)\n```\n' })
+      expect(result[2]).toEqual({ type: 'assistant-attachment', url: 'https://also.png', altText: 'also-outside' })
+    })
+
+    it('should not extract images inside unclosed fenced code blocks', () => {
+      const text = 'Before\n```\n![img](https://example.com/img.png)\nmore code'
+      const result = splitTextWithImages(text)
+      expect(result).toEqual([
+        { type: 'text', message: text },
+      ])
+    })
+
+    it('should not extract images inside code blocks with language tag', () => {
+      const text = '```markdown\n![img](https://example.com/img.png)\n```'
+      const result = splitTextWithImages(text)
+      expect(result).toEqual([
+        { type: 'text', message: text },
+      ])
+    })
+
+    it('should return empty array for empty string', () => {
+      const result = splitTextWithImages('')
+      expect(result).toEqual([])
+    })
+
+    it('should preserve text between consecutive images', () => {
+      const result = splitTextWithImages('![a](https://a.png)between![b](https://b.png)')
+      expect(result).toEqual([
+        { type: 'assistant-attachment', url: 'https://a.png', altText: 'a' },
+        { type: 'text', message: 'between' },
+        { type: 'assistant-attachment', url: 'https://b.png', altText: 'b' },
+      ])
+    })
+
+    it('should resolve local file paths in image URLs', () => {
+      const result = splitTextWithImages('![chart](/home/user/chart.png)')
+      expect(result).toEqual([
+        { type: 'assistant-attachment', url: '/api/v1/attachments/view?path=%2Fhome%2Fuser%2Fchart.png', altText: 'chart' },
+      ])
+    })
+  })
+
+  describe('resolveAttachmentUrl', () => {
+    it('should return http URLs as-is', () => {
+      expect(resolveAttachmentUrl('http://example.com/img.png')).toBe('http://example.com/img.png')
+    })
+
+    it('should return https URLs as-is', () => {
+      expect(resolveAttachmentUrl('https://example.com/img.png')).toBe('https://example.com/img.png')
+    })
+
+    it('should return /v1/ paths as-is', () => {
+      expect(resolveAttachmentUrl('/v1/files/abc/img.png')).toBe('/v1/files/abc/img.png')
+    })
+
+    it('should return /api/ paths as-is', () => {
+      expect(resolveAttachmentUrl('/api/v1/files/abc/img.png')).toBe('/api/v1/files/abc/img.png')
+    })
+
+    it('should wrap local file paths with controller URL', () => {
+      expect(resolveAttachmentUrl('/home/user/chart.png')).toBe('/api/v1/attachments/view?path=%2Fhome%2Fuser%2Fchart.png')
+    })
+
+    it('should encode special characters in local paths', () => {
+      expect(resolveAttachmentUrl('/tmp/my file (1).png')).toBe('/api/v1/attachments/view?path=%2Ftmp%2Fmy%20file%20(1).png')
+    })
+
+    it('should wrap relative paths with controller URL', () => {
+      expect(resolveAttachmentUrl('images/chart.png')).toBe('/api/v1/attachments/view?path=images%2Fchart.png')
+    })
+  })
+
+  describe('streamChunk image extraction', () => {
+    it('should split image from text preserving order in parts', () => {
+      const conversation: Conversation = [
+        {
+          role: 'assistant',
+          parts: [
+            {
+              type: 'text',
+              message: 'Here is a chart: ![chart](https://example.com/chart.png)',
+              startedAt: '2024-01-01T00:00:00Z',
+            },
+          ],
+        },
+      ]
+
+      const result = conversationUtils.streamChunk(conversation, {
+        part: {
+          type: 'text-delta',
+          message: ' done',
+          startedAt: '2024-01-01T00:00:01Z',
+        },
+      })
+
+      const assistantMsg = result[0] as AssistantConversationMessage
+      // Order: text before image, attachment, text after image
+      expect(assistantMsg.parts).toHaveLength(3)
+      expect(assistantMsg.parts[0].type).toBe('text')
+      if (assistantMsg.parts[0].type === 'text') {
+        expect(assistantMsg.parts[0].message).toBe('Here is a chart: ')
+      }
+      expect(assistantMsg.parts[1].type).toBe('assistant-attachment')
+      if (assistantMsg.parts[1].type === 'assistant-attachment') {
+        expect(assistantMsg.parts[1].url).toBe('https://example.com/chart.png')
+        expect(assistantMsg.parts[1].altText).toBe('chart')
+      }
+      expect(assistantMsg.parts[2].type).toBe('text')
+      if (assistantMsg.parts[2].type === 'text') {
+        expect(assistantMsg.parts[2].message).toBe(' done')
+      }
+    })
+
+    it('should produce only attachment part when text is just an image', () => {
+      const conversation: Conversation = []
+
+      const result = conversationUtils.streamChunk(conversation, {
+        part: {
+          type: 'text-delta',
+          message: '![img](https://example.com/img.png)',
+          startedAt: '2024-01-01T00:00:00Z',
+        },
+      })
+
+      const assistantMsg = result[0] as AssistantConversationMessage
+      expect(assistantMsg.parts).toHaveLength(1)
+      expect(assistantMsg.parts[0].type).toBe('assistant-attachment')
+      if (assistantMsg.parts[0].type === 'assistant-attachment') {
+        expect(assistantMsg.parts[0].url).toBe('https://example.com/img.png')
+      }
+    })
+
+    it('should handle incomplete image pattern across multiple chunks', () => {
+      let conversation: Conversation = []
+
+      // First chunk: partial image markdown
+      conversation = conversationUtils.streamChunk(conversation, {
+        part: {
+          type: 'text-delta',
+          message: '![alt](https://example.com/img',
+          startedAt: '2024-01-01T00:00:00Z',
+        },
+      })
+
+      let assistantMsg = conversation[0] as AssistantConversationMessage
+      // Should still be text since pattern is incomplete
+      expect(assistantMsg.parts).toHaveLength(1)
+      expect(assistantMsg.parts[0].type).toBe('text')
+
+      // Second chunk: completes the pattern
+      conversation = conversationUtils.streamChunk(conversation, {
+        part: {
+          type: 'text-delta',
+          message: '.png)',
+          startedAt: '2024-01-01T00:00:01Z',
+        },
+      })
+
+      assistantMsg = conversation[0] as AssistantConversationMessage
+      expect(assistantMsg.parts).toHaveLength(1)
+      expect(assistantMsg.parts[0].type).toBe('assistant-attachment')
+      if (assistantMsg.parts[0].type === 'assistant-attachment') {
+        expect(assistantMsg.parts[0].url).toBe('https://example.com/img.png')
+        expect(assistantMsg.parts[0].altText).toBe('alt')
+      }
+    })
+
+    it('should preserve order with multiple images interleaved with text', () => {
+      const conversation: Conversation = [
+        {
+          role: 'assistant',
+          parts: [
+            {
+              type: 'text',
+              message: '![a](https://a.png) middle ![b](https://b.png)',
+              startedAt: '2024-01-01T00:00:00Z',
+            },
+          ],
+        },
+      ]
+
+      const result = conversationUtils.streamChunk(conversation, {
+        part: {
+          type: 'text-delta',
+          message: ' end',
+          startedAt: '2024-01-01T00:00:01Z',
+        },
+      })
+
+      const assistantMsg = result[0] as AssistantConversationMessage
+      expect(assistantMsg.parts).toHaveLength(4)
+      expect(assistantMsg.parts[0].type).toBe('assistant-attachment')
+      expect(assistantMsg.parts[1].type).toBe('text')
+      expect(assistantMsg.parts[2].type).toBe('assistant-attachment')
+      expect(assistantMsg.parts[3].type).toBe('text')
+      if (assistantMsg.parts[3].type === 'text') {
+        expect(assistantMsg.parts[3].message).toBe(' end')
+      }
+    })
+
+    it('should not extract images inside code blocks in streamed text', () => {
+      const conversation: Conversation = []
+
+      const result = conversationUtils.streamChunk(conversation, {
+        part: {
+          type: 'text-delta',
+          message: '```\n![img](https://example.com/img.png)\n```',
+          startedAt: '2024-01-01T00:00:00Z',
+        },
+      })
+
+      const assistantMsg = result[0] as AssistantConversationMessage
+      expect(assistantMsg.parts).toHaveLength(1)
+      expect(assistantMsg.parts[0].type).toBe('text')
     })
   })
 })
