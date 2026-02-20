@@ -31,10 +31,19 @@
 ## Quick start
 
 ```bash
-npx oktaman
+curl -fsSL https://raw.githubusercontent.com/AbuAboud/oktaman/main/scripts/install.sh | bash
 ```
 
-That's it. OktaMan opens automatically at **http://localhost:4321**.
+Once installed, OktaMan runs as a background service at **http://localhost:4321**.
+
+```bash
+oktaman open       # Open in browser
+oktaman status     # Check if running
+oktaman logs       # View recent logs
+oktaman restart    # Restart the service
+oktaman update     # Update to latest version
+oktaman help       # Show all commands
+```
 
 On first launch, a setup wizard walks you through connecting your AI provider and configuring your preferences. You can re-run the wizard anytime from **Settings**.
 
