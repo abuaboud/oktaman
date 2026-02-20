@@ -22,6 +22,26 @@ detect_os() {
 log_info()  { printf '  %s\n' "$*"; }
 log_error() { printf '  ERROR: %s\n' "$*" >&2; }
 
+show_banner() {
+  printf '\n'
+  printf '  \033[38;2;75;0;130m   ___  _    _        __  __             \033[0m\n'
+  printf '  \033[38;2;75;0;130m  / _ \\| | _| |_ __ _|  \\/  | __ _ _ __  \033[0m\n'
+  printf '  \033[38;2;75;0;130m | | | | |/ / __/ _` | |\\/| |/ _` | '"'"'_ \\ \033[0m\n'
+  printf '  \033[38;2;75;0;130m | |_| |   <| || (_| | |  | | (_| | | | |\033[0m\n'
+  printf '  \033[38;2;75;0;130m  \\___/|_|\\_\\\\__\\__,_|_|  |_|\\__,_|_| |_|\033[0m\n'
+  printf '\n'
+  if [ -f "$OKTAMAN_HOME/version" ]; then
+    ver=$(cat "$OKTAMAN_HOME/version")
+    printf '  %s (beta)          http://localhost:%s\n' "$ver" "$PORT"
+  else
+    printf '  http://localhost:%s\n' "$PORT"
+  fi
+  printf '\n'
+  printf '  \033[33mWarning: OktaMan has full access to your computer.\n'
+  printf '  The CLI is still in beta — use at your own risk.\033[0m\n'
+  printf '\n'
+}
+
 require_installed() {
   if [ ! -f "$OKTAMAN_HOME/version" ]; then
     log_error "OktaMan is not installed. Run the installer first."
@@ -162,7 +182,10 @@ svc_uninstall() {
 
 cmd_start() {
   require_installed
+  show_banner
   svc_start
+  log_info "Press \033[1mo\033[0m → oktaman open"
+  printf '\n'
 }
 
 cmd_stop() {
@@ -269,6 +292,7 @@ cmd_uninstall() {
 
 cmd_run() {
   require_installed
+  show_banner
   log_info "Starting OktaMan in foreground (Ctrl+C to stop)..."
   HOST="127.0.0.1" \
   PORT="$PORT" \
