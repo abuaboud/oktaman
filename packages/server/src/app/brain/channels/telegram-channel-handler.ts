@@ -401,7 +401,7 @@ async function attemptPairingByCode({ code, channel }: AttemptPairingParams): Pr
  */
 const SAFE_TO_ESCAPE = /[.!#+=|{}]/;
 
-function toTelegramMarkdown(markdown: string): string {
+export function toTelegramMarkdown(markdown: string): string {
     const converted = telegramifyMarkdown(markdown, 'escape');
     return fixUnescapedChars(converted);
 }
