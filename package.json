@@ -1,6 +1,6 @@
 {
   "name": "oktaman",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Local AI assistant that runs in your browser",
   "bin": {
     "oktaman": "./bin/oktaman.js"

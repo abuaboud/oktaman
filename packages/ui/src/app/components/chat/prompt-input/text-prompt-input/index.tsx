@@ -8,6 +8,8 @@ import { FilePreview } from '../../file-preview';
 import { ModelSelector, AIModel, PROVIDER_MODELS, DEFAULT_MODELS } from '../model-selector';
 import { settingsHooks } from '@/lib/hooks/settings-hooks';
 
+let fileIdCounter = 0;
+
 const DRAFT_KEY_PREFIX = 'chat-draft';
 
 const getDraftKey = (sessionId: string | null | undefined) => {
@@ -103,7 +105,7 @@ export const TextPrompt = forwardRef<{ setMessage: (msg: string) => void }, Text
   const handleFileChange = async (selectedFiles: File[]) => {
     if (selectedFiles.length > 0) {
       for (const file of selectedFiles) {
-        const id = globalThis.crypto.randomUUID();
+        const id = `file-${Date.now()}-${++fileIdCounter}`;
         const newUploadingFile: UploadingFile = {
           id,
           file,
