@@ -297,17 +297,6 @@ cmd_setup() {
   exec "$OKTAMAN_HOME/bin/node" "$OKTAMAN_HOME/app/packages/server/dist/cli/setup-entry.js"
 }
 
-cmd_run() {
-  require_installed
-  show_banner
-  log_info "Starting OktaMan in foreground (Ctrl+C to stop)..."
-  HOST="127.0.0.1" \
-  PORT="$PORT" \
-  NODE_ENV="production" \
-  OKTAMAN_HOME="$OKTAMAN_HOME" \
-  exec "$OKTAMAN_HOME/bin/node" "$OKTAMAN_HOME/app/packages/server/dist/main.js"
-}
-
 cmd_version() {
   if [ -f "$OKTAMAN_HOME/version" ]; then
     ver=$(cat "$OKTAMAN_HOME/version")
@@ -333,7 +322,6 @@ Commands:
   open        Open OktaMan in your default browser
   update      Update OktaMan to the latest version
   uninstall   Remove OktaMan (preserves your data)
-  run         Run OktaMan in the foreground (for debugging)
   version     Show the installed version
   help        Show this help message
 HELP
@@ -353,7 +341,6 @@ case "${1:-help}" in
   open)      cmd_open ;;
   update)    cmd_update ;;
   uninstall) cmd_uninstall ;;
-  run)       cmd_run ;;
   version)   cmd_version ;;
   help|--help|-h) cmd_help ;;
   *)
