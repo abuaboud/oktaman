@@ -103,7 +103,7 @@ export const TextPrompt = forwardRef<{ setMessage: (msg: string) => void }, Text
   const handleFileChange = async (selectedFiles: File[]) => {
     if (selectedFiles.length > 0) {
       for (const file of selectedFiles) {
-        const id = crypto.randomUUID();
+        const id = globalThis.crypto.randomUUID();
         const newUploadingFile: UploadingFile = {
           id,
           file,
