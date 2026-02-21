@@ -1,5 +1,5 @@
 import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
-import { sessionController } from "./session.controller";
+import { sessionController } from "./session/session.controller";
 import { connectionController } from "./connections/connection.controller";
 import { channelController } from "./channels/channel.controller";
 import { settingsController } from "../settings/settings.controller";

@@ -7,7 +7,7 @@ import { logger } from "../common/logger";
 import { agentService } from "../agent/agent.service";
 import { sandboxManager } from "./sandbox-manager";
 import { sessionStatusAgent } from "./post-hooks/session-status-agent";
-import { sessionStreamHandler } from "./session-stream-handler";
+import { sessionStreamHandler } from "./session/session-stream-handler";
 import { settingsService } from "../settings/settings.service";
 import { createStopCondition } from "./stop-condition";
 import { constructTools } from "./tool-constructor";
@@ -213,21 +213,27 @@ async function executeChatWithOktaMan(session: Session, abortSignal?: AbortSigna
                         ? chunk.output as Record<string, unknown>
                         : undefined;
 
+                    const completedToolCall = publishToolCallUpdate({
+                        sessionId: session.id,
+                        toolCallId: chunk.toolCallId,
+                        toolName: chunk.toolName,
+                        input: toolInput,
+                        output: toolOutput,
+                        status: 'completed',
+                        completedAt: new Date().toISOString(),
+                    });
+
                     // Handle the update (emits to socket and persists to DB)
                     session = await sessionStreamHandler.handleUpdate({
                         update: {
                             event: AgentStreamingEvent.AGENT_STREAMING_UPDATE as const,
-                            data: publishToolCallUpdate({
-                                sessionId: session.id,
-                                toolCallId: chunk.toolCallId,
-                                toolName: chunk.toolName,
-                                input: toolInput,
-                                output: toolOutput,
-                                status: 'completed',
-                                completedAt: new Date().toISOString(),
-                            })
+                            data: completedToolCall,
                         }, session
                     });
+
+                    if (completedToolCall.part && completedToolCall.part.type === 'tool-call') {
+                        onMessage?.([completedToolCall.part]);
+                    }
 
                     break;
                 }

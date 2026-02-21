@@ -2,10 +2,10 @@ import { Session, SessionMetadata, ChatWithOktaManRequest, conversationUtils, Cr
 import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { sessionService } from "./session.service";
 import { z } from "zod";
-import { filesService } from "../files/files.service";
-import { sessionManager } from "../core/session-manager/session-manager.service";
-import { logger } from "../common/logger";
-import { ipExtractor } from "../common/ip-extractor";
+import { filesService } from "../../files/files.service";
+import { sessionManager } from "../../core/session-manager/session-manager.service";
+import { logger } from "../../common/logger";
+import { ipExtractor } from "../../common/ip-extractor";
 
 export const sessionController: FastifyPluginAsyncZod = async (app) => {
 

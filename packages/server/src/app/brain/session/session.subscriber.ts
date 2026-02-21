@@ -1,7 +1,7 @@
 import { EntitySubscriberInterface, EventSubscriber, LoadEvent, InsertEvent, UpdateEvent, RemoveEvent } from "typeorm";
 import { Session, SessionMetadata, tryCatch } from "@oktaman/shared";
-import { websocketService } from "../core/websockets";
-import { logger } from "../common/logger";
+import { websocketService } from "../../core/websockets";
+import { logger } from "../../common/logger";
 
 @EventSubscriber()
 export class SessionSubscriber implements EntitySubscriberInterface<Session> {

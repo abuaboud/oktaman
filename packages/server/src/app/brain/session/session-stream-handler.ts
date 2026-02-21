@@ -1,7 +1,7 @@
 import { AgentStreamingUpdate, AgentStreamingEvent, conversationUtils, Session, ConversationMessage } from "@oktaman/shared";
-import { websocketService } from "../core/websockets";
+import { websocketService } from "../../core/websockets";
 import { sessionService } from "./session.service";
-import { logger } from "../common/logger";
+import { logger } from "../../common/logger";
 
 
 export const sessionStreamHandler = {

@@ -1,7 +1,7 @@
 import { Tool, tool } from 'ai'
 import { z } from 'zod'
 import { apId, TodoStatus } from '@oktaman/shared'
-import { sessionService } from '../../session.service'
+import { sessionService } from '../../session/session.service'
 
 // Tool names
 export const WRITE_TODOS_TOOL_NAME = 'write_todos'

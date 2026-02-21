@@ -1,13 +1,13 @@
-import { databaseConnection } from '../database/database-connection';
+import { databaseConnection } from '../../database/database-connection';
 import { apSessionId, Session, SessionMetadata, Conversation, OktaManError, OktaManErrorCode, AgentUsage, CreateSessionRequest, AgentSessionStatus, TodoList, AgentStreamingEvent, AgentStreamingUpdate, spreadIfDefined, SessionSource, isNil, cleanJson } from '@oktaman/shared';
 import { SessionEntitySchema } from './session.entity';
 import dayjs from 'dayjs';
 import { generateText } from 'ai';
-import { websocketService } from '../core/websockets';
-import { logger } from '../common/logger';
-import { settingsService } from '../settings/settings.service';
-import { geolocationService } from '../common/geolocation.service';
-import { createModel } from '../settings/providers';
+import { websocketService } from '../../core/websockets';
+import { logger } from '../../common/logger';
+import { settingsService } from '../../settings/settings.service';
+import { geolocationService } from '../../common/geolocation.service';
+import { createModel } from '../../settings/providers';
 
 const sessionRepository = databaseConnection.getRepository<Session>(SessionEntitySchema);
 

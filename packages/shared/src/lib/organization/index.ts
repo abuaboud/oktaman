@@ -7,6 +7,7 @@ export * from "./conversation";
 export * from "./todo";
 export * from "./question";
 export * from "./util";
+export * from "./tool-preview";
 
 export const Organization = BaseModelSchema.extend({
     userId: z.string(),

@@ -1,8 +1,8 @@
 import { Bot, Context, InputFile } from 'grammy';
-import { ConversationFile, conversationUtils, SessionSource, SettingsChannelConfig, OktaManError, OktaManErrorCode, tryCatch } from '@oktaman/shared';
+import { ConversationFile, conversationUtils, SessionSource, SettingsChannelConfig, OktaManError, OktaManErrorCode, tryCatch, getToolCallLabelText, ToolCallConversationMessage } from '@oktaman/shared';
 import { channelService } from './channel.service';
 import { logger } from '../../common/logger';
-import { sessionService } from '../session.service';
+import { sessionService } from '../session/session.service';
 import { API_BASE_URL } from '../../common/system';
 import { settingsService } from '../../settings/settings.service';
 import { sessionManager } from '../../core/session-manager/session-manager.service';
@@ -258,6 +258,14 @@ async function handleMessage(ctx: Context, channel: SettingsChannelConfig): Prom
                         await bot.api.sendMessage(chatId, telegramMessage, {
                             parse_mode: 'MarkdownV2',
                         });
+                    } else if (part.type === 'tool-call') {
+                        const label = getToolCallLabelText(part as ToolCallConversationMessage);
+                        const escaped = toTelegramMarkdown(label);
+                        if (escaped.trim().length > 0) {
+                            await bot.api.sendMessage(chatId, escaped, {
+                                parse_mode: 'MarkdownV2',
+                            });
+                        }
                     } else if (part.type === 'assistant-attachment') {
                         try {
                             const photoSource = resolvePhotoSource(part.url);

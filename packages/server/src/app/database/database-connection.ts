@@ -1,8 +1,8 @@
 import { DataSource } from 'typeorm';
 import { OKTAMAN_HOME } from '../common/system';
 import * as path from 'path';
-import { SessionEntitySchema } from '../brain/session.entity';
-import { SessionSubscriber } from '../brain/session.subscriber';
+import { SessionEntitySchema } from '../brain/session/session.entity';
+import { SessionSubscriber } from '../brain/session/session.subscriber';
 import { AgentEntity } from '../agent/agent.entity';
 import { AgentSubscriber } from '../agent/agent.subscriber';
 import { MemoryBlockEntitySchema } from '../memory-block/memory-block.entity';

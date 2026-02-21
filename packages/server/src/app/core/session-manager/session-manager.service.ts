@@ -1,6 +1,6 @@
 import { logger } from '../../common/logger';
 import { ChatProcessingJob } from './session-manager.types';
-import { sessionService } from '../../brain/session.service';
+import { sessionService } from '../../brain/session/session.service';
 import { oktamanService } from '../../brain/oktaman.service';
 
 const activeSessionControllers = new Map<string, AbortController>();
