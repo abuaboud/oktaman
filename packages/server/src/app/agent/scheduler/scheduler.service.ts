@@ -2,10 +2,8 @@ import * as cron from 'node-cron'
 import { AgentStatus, isNil } from '@oktaman/shared'
 import { API_BASE_URL } from '../../common/system'
 import { logger } from '../../common/logger'
-import { databaseConnection } from '../../database/database-connection'
-import { AgentEntity } from '../agent.entity'
-import type { Agent } from '@oktaman/shared'
-import { agentRepository, agentService } from '../agent.service'
+import { inspect } from 'util'
+import { agentRepository } from '../agent.service'
 
 type ScheduledTask = {
     task: cron.ScheduledTask
@@ -19,7 +17,7 @@ const scheduledTasks = new Map<string, ScheduledTask>()
 
 export const schedulerService = {
     async init(): Promise<void> {
-        logger.info('Cron scheduler initializing...')
+        logger.info('[Scheduler] Cron scheduler initializing...')
 
         const agents = await agentRepository.findBy({
             status: AgentStatus.ENABLED
@@ -35,7 +33,7 @@ export const schedulerService = {
 
         logger.info({
             total: cronAgents.length
-        }, 'Cron scheduler initialized')
+        }, '[Scheduler] Cron scheduler initialized')
     },
 
     async createSchedule(agentId: string, cronExpression: string, webhookId: string): Promise<string> {
@@ -54,7 +52,7 @@ export const schedulerService = {
         const task = cron.schedule(
             cronExpression,
             async () => {
-                logger.debug({ agentId, webhookId, scheduleId }, 'Processing cron agent')
+                logger.info({ agentId, webhookId, scheduleId, cronExpression }, '[Scheduler] Cron job triggered')
 
                 const webhookUrl = `${API_BASE_URL}/api/v1/webhooks/${webhookId}`
                 try {
@@ -72,9 +70,9 @@ export const schedulerService = {
                         throw new Error(`Webhook returned ${response.status}: ${response.statusText}`)
                     }
 
-                    logger.info({ agentId, scheduleId }, 'Cron job executed successfully')
+                    logger.info({ agentId, scheduleId }, '[Scheduler] Cron job executed successfully')
                 } catch (error) {
-                    logger.error({ agentId, scheduleId, error }, 'Cron job failed')
+                    logger.error({ agentId, scheduleId, cronExpression, error: inspect(error) }, '[Scheduler] Cron job failed')
                 }
             },
             {
@@ -91,7 +89,7 @@ export const schedulerService = {
             enabled: true,
         })
 
-        logger.info({ agentId, cronExpression, scheduleId }, 'Created cron schedule')
+        logger.info({ agentId, cronExpression, scheduleId }, '[Scheduler] Created cron schedule')
         return scheduleId
     },
 
@@ -101,7 +99,7 @@ export const schedulerService = {
         if (!isNil(scheduledTask)) {
             scheduledTask.task.stop()
             scheduledTasks.delete(scheduleId)
-            logger.info({ scheduleId }, 'Deleted cron schedule')
+            logger.info({ scheduleId }, '[Scheduler] Deleted cron schedule')
         }
     },
 
@@ -109,27 +107,27 @@ export const schedulerService = {
         const scheduledTask = scheduledTasks.get(scheduleId)
 
         if (isNil(scheduledTask)) {
-            logger.warn({ scheduleId }, 'Schedule not found when updating status')
+            logger.warn({ scheduleId }, '[Scheduler] Schedule not found when updating status')
             return
         }
 
         if (status === AgentStatus.ENABLED && !scheduledTask.enabled) {
             scheduledTask.task.start()
             scheduledTask.enabled = true
-            logger.info({ scheduleId }, 'Resumed cron schedule')
+            logger.info({ scheduleId }, '[Scheduler] Resumed cron schedule')
         } else if (status !== AgentStatus.ENABLED && scheduledTask.enabled) {
             scheduledTask.task.stop()
             scheduledTask.enabled = false
-            logger.info({ scheduleId }, 'Paused cron schedule')
+            logger.info({ scheduleId }, '[Scheduler] Paused cron schedule')
         }
     },
 
     async close(): Promise<void> {
         for (const [scheduleId, scheduledTask] of scheduledTasks.entries()) {
             scheduledTask.task.stop()
-            logger.debug({ scheduleId }, 'Stopped cron schedule')
+            logger.debug({ scheduleId }, '[Scheduler] Stopped cron schedule')
         }
         scheduledTasks.clear()
-        logger.info('Cron scheduler closed')
+        logger.info('[Scheduler] Cron scheduler closed')
     },
 }

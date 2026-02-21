@@ -41,14 +41,12 @@ export const telegramChannelHandler = {
     },
 
     async initializeAllFromDatabase(): Promise<void> {
-        logger.info('[TelegramHandler] Initializing all Telegram bots from database');
         const channels = await channelService.list();
         const telegramChannels = channels.filter(channel => channel.type === 'TELEGRAM');
 
         // Only initialize the most recent Telegram channel (there should only be one)
         const latestTelegramChannel = telegramChannels[0];
         if (!latestTelegramChannel) {
-            logger.info('[TelegramHandler] No Telegram channels found');
             return;
         }
 
@@ -60,20 +58,14 @@ export const telegramChannelHandler = {
             }, '[TelegramHandler] Failed to initialize Telegram bot');
             return;
         }
-
-        logger.info({
-            channelId: latestTelegramChannel.id,
-        }, '[TelegramHandler] Initialized Telegram bot from database');
     },
     async initializeBot(channel: SettingsChannelConfig): Promise<void> {
-        logger.info({ channelId: channel.id }, '[TelegramHandler] Initializing bot');
         const botToken = getChannelBotToken(channel);
 
         try {
 
             // Skip if bot already initialized
             if (activeBots.has(botToken)) {
-                logger.info({ channelId: channel.id }, '[TelegramHandler] Bot already initialized');
                 return;
             }
 
@@ -94,7 +86,6 @@ export const telegramChannelHandler = {
 
             const useWebhooks = API_BASE_URL.startsWith('https');
 
-            logger.info({ channelId: channel.id }, '[TelegramHandler] Starting bot');
             await setProfilePicture(bot, channel.id);
 
             if (useWebhooks) {
@@ -106,14 +97,13 @@ export const telegramChannelHandler = {
                 logger.info({
                     channelId: channel.id,
                     channelName: channel.name,
-                    webhookUrl
                 }, '[TelegramHandler] Bot initialized with webhook');
             } else {
                 // Use long polling in development
                 logger.info({
                     channelId: channel.id,
-                    channelName: channel.name
-                }, '[TelegramHandler] Bot started with long polling');
+                    channelName: channel.name,
+                }, '[TelegramHandler] Bot initialized with long polling');
                 bot.start().catch((error) => {
                     logger.error({ channelId: channel.id, error: inspect(error) }, '[TelegramHandler] Bot failed to start');
                     activeBots.delete(botToken);
@@ -174,7 +164,6 @@ export const telegramChannelHandler = {
 };
 
 async function setProfilePicture(bot: Bot, channelId: string): Promise<void> {
-    logger.info({ channelId }, '[TelegramHandler] Setting bot profile picture');
     const logoPath = telegramChannelHandler.getLogoPath();
 
     // Set the bot's profile picture
@@ -183,9 +172,6 @@ async function setProfilePicture(bot: Bot, channelId: string): Promise<void> {
         type: 'static',
         photo: inputFile
     });
-
-    logger.info({ channelId }, '[TelegramHandler] Bot profile picture set successfully');
-
 }
 
 
