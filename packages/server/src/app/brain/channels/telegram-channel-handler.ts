@@ -9,8 +9,9 @@ import { sessionManager } from '../../core/session-manager/session-manager.servi
 import * as path from 'path';
 import * as fs from 'fs';
 import { Update } from 'grammy/types';
-import telegramifyMarkdown from 'telegramify-markdown';
+
 import { inspect } from 'util';
+import { sanitizeMarkdown } from 'telegram-markdown-sanitizer';
 import { telegramPairing } from './telegram-pairing';
 
 const activeBots = new Map<string, Bot>();
@@ -403,52 +404,8 @@ async function attemptPairingByCode({ code, channel }: AttemptPairingParams): Pr
     return result !== null && result.channelId === channel.id;
 }
 
-/**
- * MarkdownV2 reserved chars that are never part of formatting syntax,
- * so they are always safe to escape without breaking bold/italic/links/etc.
- */
-const SAFE_TO_ESCAPE = /[.!#+=|{}]/;
-
 export function toTelegramMarkdown(markdown: string): string {
-    const converted = telegramifyMarkdown(markdown, 'escape');
-    return fixUnescapedChars(converted);
-}
-
-function fixUnescapedChars(text: string): string {
-    const CODE_BLOCK = /```[\s\S]*?```/g;
-    const INLINE_CODE = /`[^`]+`/g;
-
-    const protectedRanges: [number, number][] = [];
-    for (const regex of [CODE_BLOCK, INLINE_CODE]) {
-        let m: RegExpExecArray | null;
-        regex.lastIndex = 0;
-        while ((m = regex.exec(text)) !== null) {
-            protectedRanges.push([m.index, m.index + m[0].length]);
-        }
-    }
-
-    function isProtected(idx: number): boolean {
-        return protectedRanges.some(([s, e]) => idx >= s && idx < e);
-    }
-
-    let result = '';
-    for (let i = 0; i < text.length; i++) {
-        if (isProtected(i)) {
-            result += text[i];
-            continue;
-        }
-        if (text[i] === '\\' && i + 1 < text.length) {
-            result += text[i] + text[i + 1];
-            i++;
-            continue;
-        }
-        if (SAFE_TO_ESCAPE.test(text[i])) {
-            result += '\\' + text[i];
-        } else {
-            result += text[i];
-        }
-    }
-    return result;
+    return sanitizeMarkdown(markdown);
 }
 
 type TelegramPhotoSize = {
