@@ -1,0 +1,50 @@
+appId: com.oktaman.desktop
+productName: OktaMan
+
+directories:
+  buildResources: build
+  output: release
+
+files:
+  - "dist/**/*"
+  - "package.json"
+
+extraResources:
+  - from: "staged/packages"
+    to: "packages"
+    filter:
+      - "**/*"
+
+mac:
+  category: public.app-category.productivity
+  target:
+    - dmg
+    - zip
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.inherit.plist
+  hardenedRuntime: true
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+win:
+  target:
+    - nsis
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Utility
+
+npmRebuild: true

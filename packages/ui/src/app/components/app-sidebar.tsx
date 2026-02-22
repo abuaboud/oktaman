@@ -5,7 +5,7 @@ import { useRef } from "react"
 import { SquarePenIcon, type SquarePenIconHandle } from "@/components/ui/square-pen"
 import { MessageSquareIcon, type MessageSquareIconHandle } from "@/components/ui/message-square"
 import { PlugZapIcon } from "@/components/ui/plug-zap"
-import { Settings, Sun, Moon, Monitor } from "lucide-react"
+import { Settings, Sun, Moon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import {
@@ -14,7 +14,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
@@ -48,24 +47,6 @@ export function AppSidebar({
       collapsible="icon"
       {...props}
     >
-      <SidebarHeader className="pb-0">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              collapsedPadding="none"
-              className="px-1.5 md:px-1 group-data-[collapsible=icon]:justify-center"
-            >
-              <img
-                src="/logo.png"
-                alt="OktaMan Logo"
-                className="object-contain size-7"
-              />
-              <span className="font-semibold group-data-[collapsible=icon]:hidden">OktaMan</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent className="px-1.5 md:px-0">
@@ -127,10 +108,10 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <div className="flex items-center justify-between px-2.5 md:px-2 py-1.5 group-data-[collapsible=icon]:justify-center">
+            <div className="flex items-center justify-between px-2.5 md:px-2 py-1.5 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-0.5 group-data-[collapsible=icon]:px-0">
               <span className="text-sm text-sidebar-foreground group-data-[collapsible=icon]:hidden">Theme</span>
-              <div className="flex gap-0.5">
-                {(["light", "dark", "system"] as const).map((t) => (
+              <div className="flex gap-0.5 group-data-[collapsible=icon]:flex-col">
+                {(["light", "dark"] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setTheme(t)}
@@ -143,7 +124,6 @@ export function AppSidebar({
                   >
                     {t === "light" && <Sun className="size-4" />}
                     {t === "dark" && <Moon className="size-4" />}
-                    {t === "system" && <Monitor className="size-4" />}
                   </button>
                 ))}
               </div>

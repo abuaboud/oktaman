@@ -19,12 +19,16 @@
     "clean": "turbo run clean",
     "test": "turbo run test",
     "setup": "npm run setup -w packages/server",
-    "start": "node bin/oktaman.js"
+    "start": "node bin/oktaman.js",
+    "desktop:dev": "npm run build && concurrently -k \"npm run dev -w packages/server\" \"npm run dev -w packages/ui\" \"npx wait-on tcp:4321 tcp:4200 && npm run dev -w apps/desktop\"",
+    "desktop:dist": "npm run build && npm run dist -w apps/desktop"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "prettier": "^3.2.5",
     "turbo": "^2.2.3",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "wait-on": "^8.0.3"
   },
   "packageManager": "npm@10.2.4",
   "engines": {

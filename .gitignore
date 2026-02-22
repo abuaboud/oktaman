@@ -57,3 +57,7 @@ packages/server/storage/
 # Release build artifacts
 release-build/
 release/
+
+# Electron desktop app
+apps/desktop/staged/
+apps/desktop/release/

@@ -6,7 +6,7 @@ interface EmptyConversationProps {
 
 export function EmptyConversation({ onSelectPrompt }: EmptyConversationProps) {
   return (
-    <div className="flex-1 flex flex-col justify-center px-4">
+    <div className="flex-1 flex flex-col justify-start pt-16 px-4">
       <div className="flex flex-col items-center text-center space-y-4 mb-8">
         <img
           src="/chad-oktaman.png"

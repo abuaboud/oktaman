@@ -29,13 +29,13 @@ export default defineConfig(({ command }) => ({
     },
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:3333',
+        target: 'http://127.0.0.1:4321',
         secure: false,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
 '/socket.io': {
-        target: 'http://127.0.0.1:3333',
+        target: 'http://127.0.0.1:4321',
         secure: false,
         changeOrigin: true,
         ws: true,

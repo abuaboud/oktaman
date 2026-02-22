@@ -32,7 +32,7 @@ const ConnectionsPage = () => {
     <SidebarProvider className="h-screen" defaultOpen={true}>
       <AppSidebar />
       <SidebarInset className="flex flex-col h-full overflow-hidden bg-sidebar">
-        <div className="flex-1 flex flex-col pl-2 pr-4 pt-4 pb-2 overflow-hidden">
+        <div className="flex-1 flex flex-col pl-2 pr-2 pt-4 pb-2 overflow-hidden">
           <div className="flex flex-col h-full bg-background rounded-xl shadow-sm border overflow-hidden">
             <Header title="Connections" />
             <div className="flex-1 overflow-auto p-6">

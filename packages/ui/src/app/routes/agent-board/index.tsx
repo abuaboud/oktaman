@@ -155,7 +155,7 @@ const AgentBoardPage = () => {
     <SidebarProvider className="h-screen" defaultOpen={true}>
       <AppSidebar />
       <SidebarInset className="flex h-full overflow-hidden bg-sidebar">
-        <div className="flex flex-col flex-1 pl-2 pr-4 pt-2 pb-2 overflow-hidden">
+        <div className="flex flex-col flex-1 pl-2 pr-2 pt-4 pb-2 overflow-hidden">
           <div className="flex flex-col h-full bg-background rounded-xl shadow-sm border overflow-hidden">
             {/* Header */}
             <div className="border-b">

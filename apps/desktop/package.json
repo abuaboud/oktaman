@@ -1,0 +1,22 @@
+{
+  "name": "@oktaman/desktop",
+  "version": "0.1.10",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "npm run build && electron .",
+    "build": "tsc",
+    "stage": "node scripts/stage.js",
+    "dist": "npm run stage && electron-builder",
+    "dist:mac": "npm run stage && electron-builder --mac",
+    "dist:win": "npm run stage && electron-builder --win",
+    "dist:linux": "npm run stage && electron-builder --linux"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.7.0",
+    "@types/node": "^22.0.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "typescript": "^5.9.3"
+  }
+}
