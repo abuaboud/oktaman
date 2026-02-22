@@ -40,9 +40,13 @@ const TOOL_ICONS: Record<string, ToolIconConfig> = {
     icon: <Wrench className="size-4 shrink-0 text-blue-grey-600 dark:text-blue-grey-400" />,
     colorClass: 'text-blue-grey-600 dark:text-blue-grey-400',
   },
-  create_agent: {
+  upsert_agent: {
     icon: <Workflow className="size-4 shrink-0 text-carrot-orange-600 dark:text-carrot-orange-400" />,
     colorClass: 'text-carrot-orange-600 dark:text-carrot-orange-400',
+  },
+  delete_agent: {
+    icon: <Workflow className="size-4 shrink-0 text-red-600 dark:text-red-400" />,
+    colorClass: 'text-red-600 dark:text-red-400',
   },
   list_connections: {
     icon: <Workflow className="size-4 shrink-0 text-blue-grey-600 dark:text-blue-grey-400" />,
@@ -51,10 +55,6 @@ const TOOL_ICONS: Record<string, ToolIconConfig> = {
   list_composio_triggers: {
     icon: <Workflow className="size-4 shrink-0 text-slate-blue-600 dark:text-slate-blue-400" />,
     colorClass: 'text-slate-blue-600 dark:text-slate-blue-400',
-  },
-  update_agent: {
-    icon: <Workflow className="size-4 shrink-0 text-carrot-orange-600 dark:text-carrot-orange-400" />,
-    colorClass: 'text-carrot-orange-600 dark:text-carrot-orange-400',
   },
   list_agents: {
     icon: <Workflow className="size-4 shrink-0 text-blue-grey-600 dark:text-blue-grey-400" />,
@@ -142,8 +142,8 @@ export function ToolCallMessage({
   const isLoading = !isStopped && (message.status === 'loading' || message.status === 'ready');
   const isError = message.status === 'error';
 
-  const isCreateAgent = message.toolName === 'create_agent';
-  const showAgentCard = isCreateAgent && isCompleted && message.output;
+  const isUpsertAgent = message.toolName === 'upsert_agent';
+  const showAgentCard = isUpsertAgent && isCompleted && message.output;
 
   const isWriteTodos = message.toolName === 'write_todos';
   const showTodoList = isWriteTodos && isCompleted && message.output?.todos;

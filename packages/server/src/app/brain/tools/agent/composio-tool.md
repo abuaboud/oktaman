@@ -25,7 +25,7 @@ When creating agents with Composio triggers, follow these additional guidelines:
 - **🚨 CRITICAL: SEARCH FOR TRIGGERS AT EVERY STAGE**—This is MANDATORY and NON-NEGOTIABLE:
   1. **Initial search**: When user first mentions a task (e.g., search for "churn" triggers)
   2. **RE-SEARCH when ANY detail changes**: If user clarifies HOW they want to detect something (e.g., "via emails", "from Stripe", "in Slack"), IMMEDIATELY search again with that specific service (e.g., `toolkits: ["gmail"]`, `toolkits: ["stripe"]`, `toolkits: ["slack"]`)
-  3. **Final search before creating**: Always search one more time right before calling create_agent to verify you have the exact right trigger
+  3. **Final search before creating**: Always search one more time right before calling upsert_agent to verify you have the exact right trigger
 - Verify user has necessary connections/integrations set up using composio tool first
 - Use exact Composio trigger slugs from list_composio_triggers response (wrong slugs break agents)
 - Offer webhook as fallback ONLY if specific Composio trigger isn't available after thorough searching

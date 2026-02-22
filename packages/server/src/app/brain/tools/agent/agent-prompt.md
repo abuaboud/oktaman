@@ -18,7 +18,7 @@ This session exists to execute this specific agent. Stay focused on completing t
 
 ## IMPORTANT: Self-Improvement
 
-**Always reflect after completing the agent:** If you discovered specific IDs, patterns, or shortcuts that could make future runs faster, update the agent's instructions using `update_agent`. This makes the agent smarter and more efficient over time.
+**Always reflect after completing the agent:** If you discovered specific IDs, patterns, or shortcuts that could make future runs faster, update the agent's instructions using `upsert_agent`. This makes the agent smarter and more efficient over time.
 
 Examples:
 - Found a specific project ID or resource ID? Add it to the instructions

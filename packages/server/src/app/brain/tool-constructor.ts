@@ -20,8 +20,8 @@ export enum ToolName {
     MEMORY_SEARCH = 'memory_search',
     MEMORY_STORE = 'memory_store',
     MEMORY_FORGET = 'memory_forget',
-    CREATE_AGENT = 'create_agent',
-    UPDATE_AGENT = 'update_agent',
+    UPSERT_AGENT = 'upsert_agent',
+    DELETE_AGENT = 'delete_agent',
     LIST_AGENTS = 'list_agents',
     LIST_COMPOSIO_TRIGGERS = 'list_composio_triggers',
     FIRECRAWL_SCRAPE = 'firecrawl_scrape',
@@ -108,18 +108,18 @@ export async function constructTools(config: ToolConstructorConfig): Promise<Con
     }
 
     // Agent Tools
-    if (shouldIncludeTool(ToolName.CREATE_AGENT) ||
-        shouldIncludeTool(ToolName.UPDATE_AGENT) ||
+    if (shouldIncludeTool(ToolName.UPSERT_AGENT) ||
+        shouldIncludeTool(ToolName.DELETE_AGENT) ||
         shouldIncludeTool(ToolName.LIST_AGENTS) ||
         shouldIncludeTool(ToolName.LIST_COMPOSIO_TRIGGERS)) {
         const agentTools = createAgentTools();
 
-        if (shouldIncludeTool(ToolName.CREATE_AGENT)) {
-            allTools[ToolName.CREATE_AGENT] = agentTools[ToolName.CREATE_AGENT];
+        if (shouldIncludeTool(ToolName.UPSERT_AGENT)) {
+            allTools[ToolName.UPSERT_AGENT] = agentTools[ToolName.UPSERT_AGENT];
         }
 
-        if (shouldIncludeTool(ToolName.UPDATE_AGENT)) {
-            allTools[ToolName.UPDATE_AGENT] = agentTools[ToolName.UPDATE_AGENT];
+        if (shouldIncludeTool(ToolName.DELETE_AGENT)) {
+            allTools[ToolName.DELETE_AGENT] = agentTools[ToolName.DELETE_AGENT];
         }
 
         if (shouldIncludeTool(ToolName.LIST_AGENTS)) {

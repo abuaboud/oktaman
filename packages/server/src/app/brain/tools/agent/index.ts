@@ -8,9 +8,12 @@ import { schedulerService } from '../../../agent/scheduler/scheduler.service'
 import { getComposio } from '../../../agent/composio/composio.service'
 
 
-const CREATE_AGENT_TOOL_NAME = 'create_agent'
-const CREATE_AGENT_TOOL_DESCRIPTION = `
-Create an agent that executes instructions when a trigger event occurs.
+const UPSERT_AGENT_TOOL_NAME = 'upsert_agent'
+const UPSERT_AGENT_TOOL_DESCRIPTION = `
+Create or update an agent that executes instructions when a trigger event occurs.
+
+If agentId is provided, the existing agent is updated with the supplied fields.
+If agentId is omitted, a new agent is created (trigger, displayName, description, and instructions are required).
 
 CRITICAL - ALWAYS call list_composio_triggers FIRST before creating composio-based agents:
 - NEVER create composio agents without calling list_composio_triggers first
@@ -18,14 +21,15 @@ CRITICAL - ALWAYS call list_composio_triggers FIRST before creating composio-bas
 - Call list_composio_triggers with the appropriate toolkit filter to get available triggers
 - Use the exact slug and schema from the list_composio_triggers response
 
-IMPORTANT - Configuring Trigger Args:
+IMPORTANT - Configuring Trigger Args (for new agents):
 - Trigger as broadly as possible—avoid strict keyword or exact-match filters in the args configuration.
 - Let the agent fire on relevant events, then use the instructions to classify or filter by intent.
 - Don't rely on the user's exact wording or precise keywords in trigger filters; capture a wide range of cases so events aren't missed.
 - It's better to allow extra events ("false positives") and filter them in the instructions, rather than risk missing relevant events due to narrow filtering.
 
-Required fields:
-- trigger: Trigger configuration object
+Fields:
+- agentId: (optional) ID of the agent to update. If omitted, a new agent is created.
+- trigger: Trigger configuration object (required for new agents)
   - type: "webhook", "composio", or "cron"
   - slug: Composio trigger slug (required if type is "composio", e.g., "GMAIL_NEW_GMAIL_MESSAGE")
   - args: Trigger configuration (required if type is "composio") - Configure broadly, avoid strict filters
@@ -51,16 +55,28 @@ Cron Expression Format (for cron triggers):
 For webhook triggers, use the webhookId to create the agent.
 `
 
-const CREATE_AGENT_TOOL_INPUT_SCHEMA = z.object({
+const UPSERT_AGENT_TOOL_INPUT_SCHEMA = z.object({
+    agentId: z.string().optional().describe('ID of an existing agent to update. If omitted, a new agent is created.'),
     trigger: z.object({
         type: z.enum(['webhook', 'composio', 'cron']),
         slug: z.string().optional(),
         args: z.record(z.string(), z.any()).optional(),
         cron: z.string().optional().describe('Cron expression (e.g., "0 9 * * *" for daily at 9 AM)'),
-    }),
-    displayName: z.string(),
-    description: z.string(),
-    instructions: z.string(),
+    }).optional().describe('Trigger configuration (required when creating a new agent)'),
+    displayName: z.string().optional().describe('Human-readable name for the agent (required when creating)'),
+    description: z.string().optional().describe('Brief explanation of what this agent does (required when creating)'),
+    instructions: z.string().optional().describe('Detailed instructions for the agent (required when creating)'),
+})
+
+const DELETE_AGENT_TOOL_NAME = 'delete_agent'
+const DELETE_AGENT_TOOL_DESCRIPTION = `
+Delete an existing agent permanently. This removes the agent and cleans up its trigger (composio, cron, or webhook).
+
+IMPORTANT: Before calling this tool, use list_agents to confirm the agent exists and verify the correct agent ID.
+This action is irreversible.
+`
+const DELETE_AGENT_TOOL_INPUT_SCHEMA = z.object({
+    agentId: z.string().describe('The ID of the agent to delete'),
 })
 
 const LIST_COMPOSIO_TRIGGERS_TOOL_NAME = 'list_composio_triggers'
@@ -74,23 +90,6 @@ const LIST_COMPOSIO_TRIGGERS_TOOL_SCHEMA = z.object({
     thought: z.string().describe('A brief explanation of what triggers are being explored and why'),
 })
 
-const UPDATE_AGENT_TOOL_NAME = 'update_agent'
-const UPDATE_AGENT_TOOL_DESCRIPTION = `
-Update an existing agent's configuration.
-
-IMPORTANT: Before calling this tool, use list_agents to get the current state of the agent.
-This allows you to understand what needs to be changed and provide the appropriate updates.
-
-You can update any combination of: name, description, instructions, or status.
-Provide the agent ID and the specific fields you want to update.
-`
-const UPDATE_AGENT_TOOL_SCHEMA = z.object({
-    agentId: z.string().describe('The ID of the agent to update'),
-    name: z.string().optional().describe('Updated name for the agent'),
-    description: z.string().optional().describe('Updated description for the agent'),
-    instructions: z.string().optional().describe('Updated instructions for the agent'),
-    thought: z.string().optional().describe('A brief explanation of what changes are being made and why'),
-})
 
 const LIST_AGENTS_TOOL_NAME = 'list_agents'
 const LIST_AGENTS_TOOL_DESCRIPTION = `
@@ -105,22 +104,37 @@ const LIST_AGENTS_TOOL_SCHEMA = z.object({
 
 export function createAgentTools(): Record<string, Tool> {
     return {
-        [CREATE_AGENT_TOOL_NAME]: tool({
-            description: CREATE_AGENT_TOOL_DESCRIPTION,
-            inputSchema: CREATE_AGENT_TOOL_INPUT_SCHEMA,
-            execute: async ({ trigger, displayName, description, instructions }) => {
-                const agentId = apAgentId()
+        [UPSERT_AGENT_TOOL_NAME]: tool({
+            description: UPSERT_AGENT_TOOL_DESCRIPTION,
+            inputSchema: UPSERT_AGENT_TOOL_INPUT_SCHEMA,
+            execute: async ({ agentId, trigger, displayName, description, instructions }) => {
+                if (agentId) {
+                    // Update existing agent
+                    return await agentService.update(agentId, {
+                        name: displayName,
+                        description,
+                        instructions,
+                    })
+                }
+
+                // Create new agent
+                assertNotNullOrUndefined(trigger, 'Trigger is required when creating a new agent')
+                assertNotNullOrUndefined(displayName, 'displayName is required when creating a new agent')
+                assertNotNullOrUndefined(description, 'description is required when creating a new agent')
+                assertNotNullOrUndefined(instructions, 'instructions is required when creating a new agent')
+
+                const newAgentId = apAgentId()
                 const webhookId = apWebhookId()
                 let createdTrigger: AgentTrigger | undefined
 
                 switch (trigger.type) {
                     case 'composio': {
-                        createdTrigger = await createComposioAgent(agentId, trigger)
+                        createdTrigger = await createComposioAgent(newAgentId, trigger)
                         break
                     }
                     case 'cron': {
                         assertNotNullOrUndefined(trigger.cron, 'Cron expression is required for cron triggers')
-                        createdTrigger = await createCronAgent(agentId, trigger.cron, webhookId)
+                        createdTrigger = await createCronAgent(newAgentId, trigger.cron, webhookId)
                         break
                     }
                     case 'webhook': {
@@ -134,7 +148,7 @@ export function createAgentTools(): Record<string, Tool> {
                 }
 
                 const agent = await agentService.create({
-                    id: agentId,
+                    id: newAgentId,
                     displayName,
                     webhookId: createdTrigger.triggerId ?? webhookId,
                     description,
@@ -145,6 +159,14 @@ export function createAgentTools(): Record<string, Tool> {
                     ...agent,
                     webhookUrl: `${API_BASE_URL}/api/v1/webhooks/${webhookId}`,
                 }
+            },
+        }),
+        [DELETE_AGENT_TOOL_NAME]: tool({
+            description: DELETE_AGENT_TOOL_DESCRIPTION,
+            inputSchema: DELETE_AGENT_TOOL_INPUT_SCHEMA,
+            execute: async ({ agentId }) => {
+                await agentService.delete({ id: agentId })
+                return { success: true, agentId }
             },
         }),
         [LIST_COMPOSIO_TRIGGERS_TOOL_NAME]: tool({
@@ -165,17 +187,6 @@ export function createAgentTools(): Record<string, Tool> {
                 return triggers
             },
         }),
-        [UPDATE_AGENT_TOOL_NAME]: tool({
-            description: UPDATE_AGENT_TOOL_DESCRIPTION,
-            inputSchema: UPDATE_AGENT_TOOL_SCHEMA,
-            execute: async ({ agentId, name, description, instructions, thought: _thought }) => {
-                return await agentService.update(agentId, {
-                    name,
-                    description,
-                    instructions,
-                })
-            },
-        }),
         [LIST_AGENTS_TOOL_NAME]: tool({
             description: LIST_AGENTS_TOOL_DESCRIPTION,
             inputSchema: LIST_AGENTS_TOOL_SCHEMA,
@@ -187,7 +198,7 @@ export function createAgentTools(): Record<string, Tool> {
     };
 }
 
-async function createComposioAgent(agentId: string, trigger: z.infer<typeof CREATE_AGENT_TOOL_INPUT_SCHEMA>['trigger']): Promise<AgentTrigger> {
+async function createComposioAgent(agentId: string, trigger: NonNullable<z.infer<typeof UPSERT_AGENT_TOOL_INPUT_SCHEMA>['trigger']>): Promise<AgentTrigger> {
     const composio = await getComposio();
     const triggerType = await composio.triggers.getType(trigger.slug!)
     if (!triggerType) {

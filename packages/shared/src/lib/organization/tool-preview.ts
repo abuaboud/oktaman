@@ -16,10 +16,15 @@ const TOOL_LABELS: Record<string, ToolLabelConfig> = {
     labelCompleted: 'Found tools',
     labelFailed: 'Tool search failed',
   },
-  create_agent: {
-    labelInProgress: 'Creating agent',
-    labelCompleted: 'Agent created',
-    labelFailed: 'Agent creation failed',
+  upsert_agent: {
+    labelInProgress: 'Saving agent',
+    labelCompleted: 'Agent saved',
+    labelFailed: 'Agent save failed',
+  },
+  delete_agent: {
+    labelInProgress: 'Deleting agent',
+    labelCompleted: 'Agent deleted',
+    labelFailed: 'Agent deletion failed',
   },
   list_connections: {
     labelInProgress: 'Loading connections',
@@ -30,11 +35,6 @@ const TOOL_LABELS: Record<string, ToolLabelConfig> = {
     labelInProgress: 'Exploring triggers',
     labelCompleted: 'Explored triggers',
     labelFailed: 'Failed to explore triggers',
-  },
-  update_agent: {
-    labelInProgress: 'Updating agent',
-    labelCompleted: 'Agent updated',
-    labelFailed: 'Agent update failed',
   },
   list_agents: {
     labelInProgress: 'Loading agents',
@@ -135,7 +135,6 @@ function extractPreviewInfo(message: ToolCallConversationMessage): string | null
   // For tools with a thought field, show it
   if (
     (message.toolName === 'execute_bash' ||
-      message.toolName === 'update_agent' ||
       message.toolName === 'COMPOSIO_REMOTE_WORKBENCH' ||
       message.toolName === 'list_composio_triggers') &&
     input['thought']
@@ -267,7 +266,6 @@ export function getToolCallLabel(message: ToolCallConversationMessage): ToolCall
       'list_composio_triggers',
       'COMPOSIO_REMOTE_WORKBENCH',
       'execute_bash',
-      'update_agent',
     ];
 
     if (thoughtOnlyTools.includes(message.toolName) && previewInfo) {
